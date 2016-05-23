@@ -1,0 +1,2 @@
+labcode;pnr;smearyear;referralnr;refsite;scrtype;smeardate;regdate;topo;snomed;sampletype;residc;residk;responsedate
+271;198104289991;2015;13506999  ;105154100  ;1;20141120;20141120;T83   ;M69719 ;060;10;80;20150101

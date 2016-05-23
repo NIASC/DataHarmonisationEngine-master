@@ -1,0 +1,6 @@
+# InteliJ Specific Ignores
+.idea
+*.iml
+
+#Project Specific Ignores
+target
