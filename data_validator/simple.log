@@ -1,10 +1,4 @@
-23.27.14:364 INFO org.company_name.FileProcessor - Processing file 271cell2015 2.txt
-23.27.14:368 INFO org.company_name.FileProcessor - Line number = 1
-23.27.14:369 ERROR org.company_name.validators.CellDataValidator - Personal number not valid 8104289991
-23.27.14:369 INFO org.company_name.FileProcessor - Line number = 2
-23.27.14:386 INFO org.company_name.FileProcessor - Line processed successfully
-23.27.14:388 INFO org.company_name.FileProcessor - Processing file 271cell2015.txt
-23.27.14:388 INFO org.company_name.FileProcessor - Line number = 1
-23.27.14:388 ERROR org.company_name.validators.CellDataValidator - Personal number not valid 8104289991
-23.27.14:388 INFO org.company_name.FileProcessor - Line number = 2
-23.27.14:388 INFO org.company_name.FileProcessor - Line processed successfully
+13.34.02:753 INFO org.company_name.FileProcessor - Processing file 271cell2015.txt
+13.34.02:757 INFO org.company_name.FileProcessor - Line number = 1
+13.34.02:758 INFO org.company_name.FileProcessor - Line number = 2
+13.34.02:771 INFO org.company_name.FileProcessor - Line processed successfully
