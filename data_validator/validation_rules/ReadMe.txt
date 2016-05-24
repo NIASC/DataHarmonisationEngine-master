@@ -6,7 +6,7 @@ SAMPLE_YEAR – Numeric and between 1960 and current year
 
 REFERRAL_NR (remissnummer) – Not validated, lab specific.
 
-SCR_TYPE - (Screening type) A few labs report this, expected values are ‘1’ or ‘2’. For those who don’t report it, we have a code exit (Xit2_raw_pad_cell.sas) where the scr_type is determined (lab specific rules).
+SCR_TYPE - (Screening type) A few labs report this, expected values are ‘1’ or ‘2’. For those who don’t report it [TODO: need to analyse Xit2_raw_pad_cell.sas where the scr_type is determined (lab specific rules)].
 
 SAMPLEDATE – Normal validation. If invalid, take the REG_DATE if ok, otherwise assume 01 JULY
 
