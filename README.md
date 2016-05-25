@@ -1,5 +1,5 @@
 #Data Validator
-Data Validator is a console based tool which provides means to validate and generate upload ready files. 
+Data Validator is a console based tool which provides means to validate and generate upload ready files
 ##Required parameters are:
     -i, input, "input file location."
     -o, output, "output file location.";
