@@ -1,4 +1,0 @@
-13.34.02:753 INFO org.company_name.FileProcessor - Processing file 271cell2015.txt
-13.34.02:757 INFO org.company_name.FileProcessor - Line number = 1
-13.34.02:758 INFO org.company_name.FileProcessor - Line number = 2
-13.34.02:771 INFO org.company_name.FileProcessor - Line processed successfully
