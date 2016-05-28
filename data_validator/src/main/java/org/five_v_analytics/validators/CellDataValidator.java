@@ -19,7 +19,10 @@ public class CellDataValidator implements DataValidator {
 
     public boolean validate(Map<String, Integer> columns, String[] data) {
         return validateSwedishId(data[columns.get("pnr")]) &&
-                validateSampleYear(data[columns.get("sampleYear")]);
+                validateSampleYear(data[columns.get("sampleYear")]) &&
+                validateRegistrationDate(data[columns.get("regDate")]) &&
+                validateCountyCode(data[columns.get("countyCode")]) &&
+                validateSampleDate(data[columns.get("sampleDate")]);
     }
 
     private final int COUNTY_NUMBER = 25;
