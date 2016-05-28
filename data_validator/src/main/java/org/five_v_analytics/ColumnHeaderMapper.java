@@ -10,21 +10,27 @@ public class ColumnHeaderMapper {
 
     static {
         columnNames = new HashMap<>();
+//      Lab Code
         columnNames.put("labcode", "labCode");
+//      Personal Number
         columnNames.put("pnr", "pnr");
+//      Sample Year
         columnNames.put("sampleyear", "sampleYear");
         columnNames.put("smearyear", "sampleYear");
         columnNames.put("sample_year", "sampleYear");
-        columnNames.put("referralnr", "referralNumber");
-        columnNames.put("refsite", "referralSite");
-        columnNames.put("scrtype", "scrType");
+//      Screening Type
+        columnNames.put("scrtype", "ScreeningType");
+//      Sample Date
         columnNames.put("smeardate", "sampleDate");
+        columnNames.put("sampledate", "sampleDate");
+//      Registration Date
         columnNames.put("regdate", "regDate");
-        columnNames.put("topo", "topo");
-        columnNames.put("snomed", "snomed");
-        columnNames.put("sampletype", "sampleType");
+//      County
         columnNames.put("residc", "countyCode");
-        columnNames.put("residk", "residk");
+        columnNames.put("county", "countyCode");
+//      SNOMED
+        columnNames.put("snomed", "snomed");
+//      Response Date
         columnNames.put("responsedate", "responseDate");
     }
 
@@ -37,7 +43,7 @@ public class ColumnHeaderMapper {
                 columnMap.put(columnNames.get(headers[i]), i);
             } else {
                 System.out.println("File contains unsupported Headers, please contact the support");
-//                System.exit(-1);
+                System.exit(-1);
             }
         }
     }
