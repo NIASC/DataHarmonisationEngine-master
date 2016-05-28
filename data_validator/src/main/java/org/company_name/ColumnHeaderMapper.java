@@ -17,6 +17,7 @@ public class ColumnHeaderMapper {
         columnNames = new HashMap<>();
         columnNames.put("labcode", "labCode");
         columnNames.put("pnr", "pnr");
+        columnNames.put("sampleyear", "sampleYear");
         columnNames.put("smearyear", "sampleYear");
         columnNames.put("referralnr", "referralNumber");
         columnNames.put("refsite", "referralSite");

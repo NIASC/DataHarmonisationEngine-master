@@ -33,13 +33,9 @@ public class Cli {
             if (cmd.hasOption("i") &&
                     cmd.hasOption("o") &&
                     cmd.hasOption("t")) {
-                try {
                     FileProcessor.process(cmd.getOptionValue("i"),
                             cmd.getOptionValue("o"),
                             cmd.getOptionValue("t"));
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
 
             } else {
                 help();

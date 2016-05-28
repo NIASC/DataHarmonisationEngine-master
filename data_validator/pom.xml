@@ -35,5 +35,21 @@
         <artifactId>slf4j-simple</artifactId>
         <version>1.7.21</version>
     </dependency>
+    <!-- http://mvnrepository.com/artifact/net.sourceforge.jchardet/jchardet -->
+    <dependency>
+        <groupId>net.sourceforge.jchardet</groupId>
+        <artifactId>jchardet</artifactId>
+        <version>1.0</version>
+    </dependency>
+    <!-- http://mvnrepository.com/artifact/com.google.javascript/closure-compiler -->
+    <!-- http://mvnrepository.com/artifact/com.ibm.icu/icu4j -->
+    <dependency>
+        <groupId>com.ibm.icu</groupId>
+        <artifactId>icu4j</artifactId>
+        <version>57.1</version>
+    </dependency>
+
+
+
 </dependencies>
 </project>
