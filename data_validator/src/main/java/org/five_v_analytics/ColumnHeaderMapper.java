@@ -1,17 +1,12 @@
-package org.company_name;
+package org.five_v_analytics;
 
 
 import java.util.HashMap;
 import java.util.Map;
 
 public class ColumnHeaderMapper {
-    static Map<String, String> columnNames;
-
-    public Map<String, Integer> getColumnMap() {
-        return columnMap;
-    }
-
-    Map<String, Integer> columnMap;
+    private static Map<String, String> columnNames;
+    private static Map<String, Integer> columnMap;
 
     static {
         columnNames = new HashMap<>();
@@ -32,7 +27,7 @@ public class ColumnHeaderMapper {
         columnNames.put("responsedate", "responseDate");
     }
 
-    public void mapHeaderToIndex(String[] headers) {
+    public static void mapHeaderToIndex(String[] headers) {
         columnMap = new HashMap<>();
         String value;
         for (int i = 0; i < headers.length; i++) {
@@ -40,10 +35,14 @@ public class ColumnHeaderMapper {
             if (value != null) {
                 columnMap.put(columnNames.get(headers[i]), i);
             } else {
-                columnMap.put("missingName", -1);
-                return;
+                System.out.println("File contains unsupported Headers, please contact the support");
+                System.exit(-1);
             }
         }
+    }
+
+    public static Map<String, Integer> getColumnMap() {
+        return columnMap;
     }
 
 }

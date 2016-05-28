@@ -1,9 +1,9 @@
-package org.company_name;
+package org.five_v_analytics;
 
 import com.ibm.icu.text.CharsetDetector;
 import com.ibm.icu.text.CharsetMatch;
-import org.company_name.factories.ValidatorFactory;
-import org.company_name.validators.DataValidator;
+import org.five_v_analytics.factories.ValidatorFactory;
+import org.five_v_analytics.validators.DataValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,11 +16,10 @@ import java.util.Arrays;
 
 
 public class FileProcessor {
-    public static final Logger LOGGER = LoggerFactory.getLogger(FileProcessor.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(FileProcessor.class);
     private static Path success;
     private static Path failure;
     private static DataValidator validator;
-    private static ColumnHeaderMapper columnHeaderMapper = new ColumnHeaderMapper();
 
     public static void process(String inputPath, String outputPath, String type) {
         validator = ValidatorFactory.getInstance(type);
@@ -47,11 +46,7 @@ public class FileProcessor {
             while ((line = reader.readLine()) != null) {
                 System.out.println("Raw CSV data: " + line);
                 if (lineCount == 0) {
-                    columnHeaderMapper.mapHeaderToIndex(splitLine(line));
-                    failureWriter.write(line + "\n");
-                    if (columnHeaderMapper.getColumnMap().containsKey("missingName")) {
-                        return;
-                    }
+                    createColumnHeadersMap(failureWriter, line);
                 } else {
                     LOGGER.info("Line number = {}", lineCount);
                     validateLine(successWriter, failureWriter, line);
@@ -64,8 +59,13 @@ public class FileProcessor {
         }
     }
 
+    private static void createColumnHeadersMap(BufferedWriter failureWriter, String line) throws IOException {
+        ColumnHeaderMapper.mapHeaderToIndex(splitLine(line));
+        failureWriter.write(line + "\n");
+    }
+
     private static void validateLine(BufferedWriter successWriter, BufferedWriter failureWriter, String line) throws IOException {
-        if (validator.validate(columnHeaderMapper.getColumnMap(), splitLine(line))) {
+        if (validator.validate(ColumnHeaderMapper.getColumnMap(), splitLine(line))) {
             LOGGER.info("Line processed successfully");
             successWriter.write(line + "\n");
         } else {

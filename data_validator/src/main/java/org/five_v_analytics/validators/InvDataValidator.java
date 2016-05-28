@@ -1,4 +1,4 @@
-package org.company_name.validators;
+package org.five_v_analytics.validators;
 
 
 public class InvDataValidator  {
