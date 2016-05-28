@@ -1,8 +1,12 @@
 package org.five_v_analytics.validators;
 
+import com.sun.media.sound.InvalidDataException;
+import org.five_v_analytics.exceptions.DataValidationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -25,7 +29,7 @@ public abstract class ValidatorTemplate {
         countyLabCodes.put("08", "251");
         countyLabCodes.put("09", "261");
         countyLabCodes.put("10", "271");
-        countyLabCodes.put("12", "301");
+        countyLabCodes.put("12", "417");
         countyLabCodes.put("13", "421");
         countyLabCodes.put("14", "501");
         countyLabCodes.put("17", "541");
@@ -39,16 +43,27 @@ public abstract class ValidatorTemplate {
         countyLabCodes.put("25", "651");
     }
 
-    protected boolean validateLabCodeAndCounty(String labCode, String county){
-        return  Integer.parseInt(county) <= COUNTY_NUMBER && countyLabCodes.get(county).equals(labCode);
+    protected String validateLabCode(String labCode, String county) throws DataValidationException {
+        if (!countyLabCodes.get(county).equals(labCode)){
+            throw new DataValidationException();
+        }
+        return  labCode;
+    }
+
+    protected String validateCounty(String county) throws DataValidationException{
+        if (!county.trim().matches("^\\d{2}") || Integer.parseInt(county) >= COUNTY_NUMBER){
+            throw new DataValidationException();
+        }
+
+        return county;
     }
 
 
-    protected boolean validateSwedishPersonalNumber(String value) {
-
+    protected String validateSwedishPersonalNumber(String value) throws DataValidationException{
+        String personalNumberHash;
         // Check for nulls and false lengths
         if (value == null ||  value.length() < 10) {
-            return false;
+            throw new DataValidationException();
         }
 
         try {
@@ -64,7 +79,7 @@ public abstract class ValidatorTemplate {
             } else if (value.length() == 10) {
                 value = value.substring(0, 10);
             } else {
-                return false;
+                throw new DataValidationException();
             }
             // Remove check number
             int check = Integer.parseInt(value.substring(9, 10));
@@ -94,11 +109,23 @@ public abstract class ValidatorTemplate {
             boolean isCompany = Integer.parseInt(value.substring(2, 4), 10) >= 20;
             if (!isValid){
                 LOGGER.error("Personal number not valid {}", value);
+                throw new DataValidationException();
             }
-            return isValid;
+            return encryptPersonalNumber(value);
         } catch (NumberFormatException ex) {
             ex.printStackTrace();
         }
-        return false;
+        throw new DataValidationException();
+    }
+
+    private String encryptPersonalNumber(String pnr) {
+        MessageDigest digest = null;
+        try {
+            digest = MessageDigest.getInstance("SHA-256");
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        }
+        byte[] hash = digest.digest(pnr.getBytes());
+        return String.format("%064x", new java.math.BigInteger(1, hash));
     }
 }

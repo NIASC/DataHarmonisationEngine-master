@@ -1,12 +1,15 @@
 package org.five_v_analytics.validators;
 
+import org.five_v_analytics.exceptions.DataValidationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.LocalDate;
+import java.time.Year;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.DateTimeParseException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -19,24 +22,34 @@ public class CellDataValidator extends ValidatorTemplate implements DataValidato
 
     private CellDataValidator() { }
 
-    public boolean validate(Map<String, Integer> columns, String[] data) {
-        return  validateLabCodeAndCounty(data[columns.get("labcode")], data[columns.get("countyCode")]) &&
-                validateSwedishPersonalNumber(data[columns.get("pnr")]) &&
-                validateSampleYear(data[columns.get("sampleYear")]) &&
-                validateRegistrationDate(data[columns.get("regDate")]) &&
-                validateSampleDate(data[columns.get("sampleDate")]);
+    public String validateAndReturnLine(Map<String, Integer> columns, String[] data) throws DataValidationException {
+        data[columns.get("countyCode")] = validateCounty(data[columns.get("countyCode")]);
+        data[columns.get("labCode")] = validateLabCode(data[columns.get("labCode")],data[columns.get("countyCode")]);
+        data[columns.get("pnr")] = validateSwedishPersonalNumber(data[columns.get("pnr")]);
+        data[columns.get("sampleYear")] = validateSampleYear(data[columns.get("sampleYear")]);
+        data[columns.get("sampleDate")] = validateSampleDate(data[columns.get("sampleDate")], data[columns.get("regDate")]);
+        data[columns.get("regDate")] = validateRegistrationDate(data[columns.get("regDate")]);
+
+        return Arrays.toString(data);
     }
 
-    private boolean validateSampleYear(String sampleYear) {
-        return sampleYear.trim().matches("^\\d{4}") && Integer.parseInt(sampleYear) >= RESEARCH_START_YEAR;
+    private String validateSampleYear(String sampleYear) throws DataValidationException {
+        if (!sampleYear.trim().matches("^\\d{4}")  || Integer.parseInt(sampleYear) < RESEARCH_START_YEAR){
+            throw new DataValidationException();
+        }
+        return sampleYear;
     }
 
-    private boolean validateSampleDate(String sampleDate) {
-        return validaFullDate(sampleDate.trim());
+    private String validateSampleDate(String sampleDate, String regDate) {
+        if (validaFullDate(sampleDate.trim())){
+            return sampleDate;
+        } else {
+            return validaFullDate(regDate.trim())? regDate: (Year.now().getValue() - 1) + "0601";
+        }
     }
 
-    private boolean validateRegistrationDate(String regDate) {
-        return validaFullDate(regDate.trim());
+    private String validateRegistrationDate(String regDate) {
+        return validaFullDate(regDate.trim())? regDate: (Year.now().getValue() - 1) + "0601";
     }
 
 
