@@ -1,7 +1,6 @@
 package org.five_v_analytics;
 
 import com.ibm.icu.text.CharsetDetector;
-import com.ibm.icu.text.CharsetMatch;
 import org.five_v_analytics.factories.ValidatorFactory;
 import org.five_v_analytics.validators.DataValidator;
 import org.slf4j.Logger;
@@ -12,7 +11,10 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
+import java.util.Map;
 
 
 public class FileProcessor {
@@ -45,11 +47,12 @@ public class FileProcessor {
             LOGGER.info("Processing file {}", filePath.getFileName().toString());
             while ((line = reader.readLine()) != null) {
                 System.out.println("Raw CSV data: " + line);
+                String[] values = splitLine(line);
                 if (lineCount == 0) {
-                    createColumnHeadersMap(failureWriter, line);
+                    createColumnHeadersMap(failureWriter, values);
                 } else {
                     LOGGER.info("Line number = {}", lineCount);
-                    validateLine(successWriter, failureWriter, line);
+                    validateLine(successWriter, failureWriter, values);
                 }
                 lineCount++;
             }
@@ -59,23 +62,36 @@ public class FileProcessor {
         }
     }
 
-    private static void createColumnHeadersMap(BufferedWriter failureWriter, String line) throws IOException {
-        ColumnHeaderMapper.mapHeaderToIndex(splitLine(line));
-        failureWriter.write(line + "\n");
+    private static void createColumnHeadersMap(BufferedWriter failureWriter, String[] values) throws IOException {
+        ColumnHeaderMapper.mapHeaderToIndex(values);
+        failureWriter.write(Arrays.toString(values) + "\n");
     }
 
-    private static void validateLine(BufferedWriter successWriter, BufferedWriter failureWriter, String line) throws IOException {
-        if (validator.validate(ColumnHeaderMapper.getColumnMap(), splitLine(line))) {
+    private static void validateLine(BufferedWriter successWriter, BufferedWriter failureWriter, String[] values) throws IOException {
+        Map<String, Integer> headers = ColumnHeaderMapper.getColumnMap();
+        if (validator.validate(headers, values)) {
             LOGGER.info("Line processed successfully");
-            successWriter.write(line + "\n");
+            values[headers.get("pnr")] = encryptPersonalNumber(values[headers.get("pnr")]);
+            successWriter.write(Arrays.toString(values) + "\n");
         } else {
-            failureWriter.write(line);
+            failureWriter.write(Arrays.toString(values));
         }
     }
 
-    private static void createOutputDirectories(String outputPath, String fileName) {
-        Path output = Paths.get(outputPath + "/" + fileName);
+    private static String encryptPersonalNumber(String pnr) {
+        MessageDigest digest = null;
         try {
+            digest = MessageDigest.getInstance("SHA-256");
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        }
+        byte[] hash = digest.digest(pnr.getBytes());
+        return String.format("%064x", new java.math.BigInteger(1, hash));
+    }
+
+    private static void createOutputDirectories(String outputPath, String fileName) {
+        try {
+            Path output = Paths.get(outputPath + "/" + fileName);
             Files.createDirectories(output);
             Path successDirectory = Paths.get(output.toString() + "/success");
             Path failureDirectory = Paths.get(output.toString() + "/failure");
@@ -90,20 +106,18 @@ public class FileProcessor {
     }
 
     private static String getEncoding(Path filePath)  {
-        CharsetDetector det = new CharsetDetector();
-        CharsetMatch m;
-        BufferedInputStream reader = null;
-        try {
-            reader = new BufferedInputStream(new FileInputStream(filePath.toFile()));
-            det.setText(reader);
+        CharsetDetector detector = new CharsetDetector();
+        try(BufferedInputStream reader  = new BufferedInputStream(new FileInputStream(filePath.toFile()))) {
+            detector.setText(reader);
         } catch (IOException e ) {
             e.printStackTrace();
         }
-        m = det.detect();
-        return m.getName();
+        return detector.detect().getName();
     }
 
     private static String[] splitLine(String line){
-        return Arrays.stream(line.split("[ ;\\t]+")).map(word -> word.replaceAll("\\p{C}", "")).toArray(String[]::new);
+        return Arrays.stream(line.split("[ ;\\t]+")).map(word ->
+                word.replaceAll("\\p{C}", "")
+        ).toArray(String[]::new);
     }
 }

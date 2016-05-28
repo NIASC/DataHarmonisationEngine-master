@@ -14,6 +14,7 @@ public class ColumnHeaderMapper {
         columnNames.put("pnr", "pnr");
         columnNames.put("sampleyear", "sampleYear");
         columnNames.put("smearyear", "sampleYear");
+        columnNames.put("sample_year", "sampleYear");
         columnNames.put("referralnr", "referralNumber");
         columnNames.put("refsite", "referralSite");
         columnNames.put("scrtype", "scrType");
@@ -36,7 +37,7 @@ public class ColumnHeaderMapper {
                 columnMap.put(columnNames.get(headers[i]), i);
             } else {
                 System.out.println("File contains unsupported Headers, please contact the support");
-                System.exit(-1);
+//                System.exit(-1);
             }
         }
     }
