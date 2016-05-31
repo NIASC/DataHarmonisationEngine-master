@@ -150,7 +150,7 @@ public abstract class ValidatorTemplate {
 
     protected String validateSnomed(String snomed) {
         generateSnomedList();
-        String regSnomed = snomedCodes.get(snomed);
+        String regSnomed = snomedCodes.get(snomed.trim());
         if (regSnomed != null) {
             return regSnomed;
         } else {
