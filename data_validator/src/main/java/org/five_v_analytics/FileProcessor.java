@@ -12,17 +12,18 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
+import java.text.Normalizer;
 import java.util.Arrays;
 import java.util.Map;
 
 
 public class FileProcessor {
     private static final Logger LOGGER = LoggerFactory.getLogger(FileProcessor.class);
+    private static final String[] SPLITERS = {";",",","\t"," "};
     private static Path success;
     private static Path failure;
     private static DataValidator validator;
+    private static String[] headerLine;
 
     public static void process(String inputPath, String outputPath, String type) {
         validator = ValidatorFactory.getInstance(type);
@@ -63,14 +64,14 @@ public class FileProcessor {
     }
 
     private static void createColumnHeadersMap(BufferedWriter failureWriter, String line) throws IOException {
-        ColumnHeaderMapper.mapHeaderToIndex(splitLine(line));
+        headerLine = splitHeader(line);
+        ColumnHeaderMapper.mapHeaderToIndex(headerLine);
         failureWriter.write(line + "\n");
     }
 
     private static void validateLine(BufferedWriter successWriter, BufferedWriter failureWriter, String line) throws IOException {
         Map<String, Integer> headers = ColumnHeaderMapper.getColumnMap();
         try {
-            String temp = validator.validateAndReturnLine(headers, splitLine(line));
             successWriter.write(validator.validateAndReturnLine(headers, splitLine(line)) + "\n");
         }catch (DataValidationException e){
             failureWriter.write(line);
@@ -103,8 +104,22 @@ public class FileProcessor {
         return detector.detect().getName();
     }
 
-    private static String[] splitLine(String line){
+    private static String[] splitHeader(String line){
         return Arrays.stream(line.split("[ ;\\t]+")).map(word ->
+                word.replaceAll("\\p{C}", "")
+        ).toArray(String[]::new);
+    }
+
+    private static String[] splitLine(String line){
+        for (String splitter : SPLITERS){
+            String[] holder = Arrays.stream(line.split(splitter)).map(word ->
+                    word.replaceAll("\\p{C}", "")
+            ).toArray(String[]::new);
+            if(holder.length == headerLine.length){
+                return holder;
+            }
+        }
+       return Arrays.stream(line.split("[;\t ]+")).map(word ->
                 word.replaceAll("\\p{C}", "")
         ).toArray(String[]::new);
     }

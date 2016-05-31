@@ -23,6 +23,8 @@ public class ColumnHeaderMapper {
 //      Sample Date
         columnNames.put("smeardate", "sampleDate");
         columnNames.put("sampledate", "sampleDate");
+        columnNames.put("sampledate", "sampleDate");
+
 //      Registration Date
         columnNames.put("regdate", "regDate");
 //      County
