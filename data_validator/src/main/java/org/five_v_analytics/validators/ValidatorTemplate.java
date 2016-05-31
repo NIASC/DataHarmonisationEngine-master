@@ -1,22 +1,24 @@
 package org.five_v_analytics.validators;
 
-import com.sun.media.sound.InvalidDataException;
 import org.five_v_analytics.exceptions.DataValidationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Created by iliaaptsiauri on 28/05/16.
- */
 public abstract class ValidatorTemplate {
     private static final Logger LOGGER = LoggerFactory.getLogger(ValidatorTemplate.class);
     private final int COUNTY_NUMBER = 25;
     private static final Map<String, String> countyLabCodes;
+    public static  Map<String,String> snomedCodes = new HashMap<>();
 
     static {
         countyLabCodes = new HashMap<>();
@@ -127,5 +129,34 @@ public abstract class ValidatorTemplate {
         }
         byte[] hash = digest.digest(pnr.getBytes());
         return String.format("%064x", new java.math.BigInteger(1, hash));
+    }
+
+    private void generateSnomedList() {
+        try (BufferedReader reader = Files.newBufferedReader(Paths.get("./snomed_codes/nkc_translation_cell_diag.csv"), Charset.forName("Cp1252"))) {
+            String line;
+            String[] lines;
+            int lineCount = 0;
+            while ((line = reader.readLine()) != null) {
+                if (lineCount > 0) {
+                    lines = line.split(";");
+                    snomedCodes.put(lines[3], lines[4]);
+                }
+                lineCount++;
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    protected String validateSnomed(String snomed) {
+        generateSnomedList();
+        String regSnomed = snomedCodes.get(snomed);
+        if (regSnomed != null) {
+            return regSnomed;
+        } else {
+            LOGGER.error("Snomed: {} didn't match any Reg_snomed", snomed);
+            return snomed;
+        }
+
     }
 }

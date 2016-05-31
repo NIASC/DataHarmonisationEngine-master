@@ -10,7 +10,6 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.DateTimeParseException;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Map;
 
 
@@ -32,6 +31,9 @@ public class CellDataValidator extends ValidatorTemplate implements DataValidato
             data[columns.get("sampleDate")] = validateSampleDate(data[columns.get("sampleDate")], data[columns.get("regDate")]);
         }else{
             data[columns.get("sampleDate")] = validateSampleDate(data[columns.get("sampleDate")]);
+        }
+        if(columns.containsKey("snomed")){
+            data[columns.get("snomed")] = validateSnomed(data[columns.get("snomed")]);
         }
 
         return Arrays.toString(data);
