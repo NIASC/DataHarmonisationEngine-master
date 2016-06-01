@@ -4,3 +4,11 @@
 
 #Project Specific Ignores
 target
+simple.log
+test
+
+
+# Eclipse Specific Ignores
+.classpath
+.project
+.settings
