@@ -73,7 +73,7 @@ public class FileProcessor {
         try {
             successWriter.write(validator.validateAndReturnLine(headers, splitLine(line)) + "\n");
         }catch (DataValidationException e){
-            failureWriter.write(line);
+            failureWriter.write(line + "\n");
         }
     }
 
