@@ -22,7 +22,6 @@ public class CellDataValidator extends ValidatorTemplate implements DataValidato
     private CellDataValidator() { }
 
     public String validateAndReturnLine(Map<String, Integer> columns, String[] data) throws DataValidationException {
-        validateCounty(data[columns.get("countyCode")]);
         validateLabCode(data[columns.get("labCode")],data[columns.get("countyCode")]);
         data[columns.get("pnr")] = validateSwedishPersonalNumber(data[columns.get("pnr")]);
         validateSampleYear(data[columns.get("sampleYear")]);
@@ -45,6 +44,7 @@ public class CellDataValidator extends ValidatorTemplate implements DataValidato
 
     private String validateSampleYear(String sampleYear) throws DataValidationException {
         if (!sampleYear.trim().matches("^\\d{4}")  || Integer.parseInt(sampleYear) < RESEARCH_START_YEAR){
+            LOGGER.error("Sample year parsing error, {}", sampleYear);
             throw new DataValidationException();
         }
         return sampleYear;

@@ -22,7 +22,7 @@ public class FileProcessor {
     private static Path success;
     private static Path failure;
     private static DataValidator validator;
-    private static String[] headerLine;
+    private static String[] columnNames;
 
     public static void process(String inputPath, String outputPath, String type) {
         validator = ValidatorFactory.getInstance(type);
@@ -63,15 +63,15 @@ public class FileProcessor {
     }
 
     private static void createColumnHeadersMap(BufferedWriter failureWriter, String line) throws IOException {
-        headerLine = splitHeader(line);
-        ColumnHeaderMapper.mapHeaderToIndex(headerLine);
+        columnNames = getColumnNames(line);
+        ColumnHeaderMapper.mapHeaderToIndex(columnNames);
         failureWriter.write(line + "\n");
     }
 
     private static void validateLine(BufferedWriter successWriter, BufferedWriter failureWriter, String line) throws IOException {
         Map<String, Integer> headers = ColumnHeaderMapper.getColumnMap();
         try {
-            successWriter.write(validator.validateAndReturnLine(headers, splitLine(line)) + "\n");
+            successWriter.write(validator.validateAndReturnLine(headers, getColumnValues(line)) + "\n");
         }catch (DataValidationException e){
             failureWriter.write(line + "\n");
         }
@@ -103,22 +103,23 @@ public class FileProcessor {
         return detector.detect().getName();
     }
 
-    private static String[] splitHeader(String line){
-        return Arrays.stream(line.split("[ ;\\t]+")).map(word ->
-                word.replaceAll("\\p{C}", "")
-        ).toArray(String[]::new);
+    private static String[] getColumnNames(String line){
+        return splitLine(line, "[ ;\\t]+");
     }
 
-    private static String[] splitLine(String line){
+    private static String[] getColumnValues(String line){
         for (String splitter : SPLITERS){
-            String[] holder = Arrays.stream(line.split(splitter)).map(word ->
-                    word.replaceAll("\\p{C}", "")
-            ).toArray(String[]::new);
-            if(holder.length == headerLine.length){
+            String[] holder = splitLine(line, splitter);
+            if(holder.length == columnNames.length){
                 return holder;
             }
         }
-       return Arrays.stream(line.split("[;\t ]+")).map(word ->
+       return splitLine(line, "[;\t ]+");
+
+    }
+
+    private static String[] splitLine(String line, String splitter){
+        return Arrays.stream(line.split(splitter)).map(word ->
                 word.replaceAll("\\p{C}", "")
         ).toArray(String[]::new);
     }

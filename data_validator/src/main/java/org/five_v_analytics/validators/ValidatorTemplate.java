@@ -46,18 +46,15 @@ public abstract class ValidatorTemplate {
     }
 
     protected String validateLabCode(String labCode, String county) throws DataValidationException {
-        if (!countyLabCodes.get(county).equals(labCode)){
+        if (validateCounty(county) || !countyLabCodes.get(county).equals(labCode)){
+            LOGGER.error("Validation Error, County code is {}, labCode is {}", county, labCode);
             throw new DataValidationException();
         }
         return  labCode;
     }
 
-    protected String validateCounty(String county) throws DataValidationException{
-        if (!county.trim().matches("^\\d{2}") || Integer.parseInt(county) >= COUNTY_NUMBER){
-            throw new DataValidationException();
-        }
-
-        return county;
+    private boolean validateCounty(String county) throws DataValidationException{
+        return !county.trim().matches("^\\d{2}") || Integer.parseInt(county) >= COUNTY_NUMBER;
     }
 
 
@@ -65,6 +62,7 @@ public abstract class ValidatorTemplate {
         String personalNumberHash;
         // Check for nulls and false lengths
         if (value == null ||  value.length() < 10) {
+            LOGGER.error("Validation Error, personal number is incorrect", value);
             throw new DataValidationException();
         }
 
@@ -81,6 +79,7 @@ public abstract class ValidatorTemplate {
             } else if (value.length() == 10) {
                 value = value.substring(0, 10);
             } else {
+                LOGGER.error("Validation Error, personal number is incorrect", value);
                 throw new DataValidationException();
             }
             // Remove check number
@@ -110,13 +109,14 @@ public abstract class ValidatorTemplate {
             boolean isMale = !((Integer.parseInt(value.substring(8, 9)) % 2) == 0);
             boolean isCompany = Integer.parseInt(value.substring(2, 4), 10) >= 20;
             if (!isValid){
-                LOGGER.error("Personal number not valid {}", value);
+                LOGGER.error("Validation Error, personal number is incorrect", value);
                 throw new DataValidationException();
             }
             return encryptPersonalNumber(value);
         } catch (NumberFormatException ex) {
             ex.printStackTrace();
         }
+        LOGGER.error("Validation Error, personal number is incorrect", value);
         throw new DataValidationException();
     }
 
