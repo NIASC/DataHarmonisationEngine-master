@@ -44,12 +44,13 @@ public class ColumnHeaderMapper {
         columnMap = new HashMap<>();
         String value;
         for (int i = 0; i < headers.length; i++) {
+            LOGGER.info("Indexing header \"{}\"", headers[i]);
             value = columnNames.get(headers[i]);
             if (value != null) {
                 columnMap.put(columnNames.get(headers[i]), i);
             } else {
                 System.out.println("File contains unsupported Headers, please contact the support");
-                LOGGER.info("File contains unsupported Headers, please contact the support");
+                LOGGER.info("\"{}\" is unsupported Header, please contact the support", headers[i]);
 //                System.exit(-1);
             }
         }

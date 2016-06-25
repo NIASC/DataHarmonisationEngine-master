@@ -6,7 +6,6 @@ import org.five_v_analytics.factories.ValidatorFactory;
 import org.five_v_analytics.validators.DataValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.io.*;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
@@ -38,6 +37,7 @@ public class FileProcessor {
             });
         } catch (IOException e) {
             LOGGER.error("Error while Searching for files");
+            LOGGER.info("Exception. " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -64,6 +64,7 @@ public class FileProcessor {
 
         } catch (IOException e) {
             LOGGER.error("Error while processing file {}", filePath.getFileName().toString());
+            LOGGER.info("Exception. " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -82,6 +83,7 @@ public class FileProcessor {
         Map<String, Integer> headers = ColumnHeaderMapper.getColumnMap();
         try {
             successWriter.write(validator.validateAndReturnLine(headers, getColumnValues(line)) + "\n");
+            LOGGER.info("validation finished for line {}",line);
         }catch (DataValidationException e){
             LOGGER.info("Line {} is incorrect, writing to failure directory", line);
             failureWriter.write(line + "\n");
@@ -103,19 +105,21 @@ public class FileProcessor {
 
         } catch (IOException e) {
             LOGGER.error("Cannot create success and failure directories for a file file {}", fileName);
+            LOGGER.info("Exception. " + e.getMessage());
             e.printStackTrace();
         }
     }
 
     private static String getEncoding(Path filePath)  {
-        LOGGER.info("Trying to get file encoding for {}",filePath);
+        LOGGER.info("Trying to get file encoding for {}",filePath.getFileName());
         CharsetDetector detector = new CharsetDetector();
         try(BufferedInputStream reader  = new BufferedInputStream(new FileInputStream(filePath.toFile()))) {
             detector.setText(reader);
         } catch (IOException e ) {
+            LOGGER.info("Exception. " + e.getMessage());
             e.printStackTrace();
         }
-        LOGGER.info("File encoding for {} is {}",filePath,detector.detect().getName());
+        LOGGER.info("File encoding for {} is {}",filePath.getFileName(),detector.detect().getName());
         return detector.detect().getName();
     }
 

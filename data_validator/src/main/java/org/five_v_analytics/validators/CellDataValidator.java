@@ -34,7 +34,6 @@ public class CellDataValidator extends ValidatorTemplate implements DataValidato
         if(columns.containsKey("snomed")){
             data[columns.get("snomed")] = validateSnomed(data[columns.get("snomed")]);
         }
-        LOGGER.info("validation finished for {}",data[columns.get("labCode")]);
         return Arrays.toString(data);
     }
 
