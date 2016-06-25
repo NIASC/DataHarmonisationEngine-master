@@ -34,15 +34,17 @@ public class CellDataValidator extends ValidatorTemplate implements DataValidato
         if(columns.containsKey("snomed")){
             data[columns.get("snomed")] = validateSnomed(data[columns.get("snomed")]);
         }
-
+        LOGGER.info("validation finished for {}",data[columns.get("labCode")]);
         return Arrays.toString(data);
     }
 
     private String validateSampleDate(String sampleDate) {
+        LOGGER.info("Validating sampleDate");
         return validaFullDate(sampleDate.trim()) ? sampleDate : (Year.now().getValue() - 1) + "0601";
     }
 
     private String validateSampleYear(String sampleYear) throws DataValidationException {
+        LOGGER.info("Validating Sample Year");
         if (!sampleYear.trim().matches("^\\d{4}")  || Integer.parseInt(sampleYear) < RESEARCH_START_YEAR){
             LOGGER.error("Sample year parsing error, {}", sampleYear);
             throw new DataValidationException();
@@ -51,6 +53,7 @@ public class CellDataValidator extends ValidatorTemplate implements DataValidato
     }
 
     private String validateSampleDate(String sampleDate, String regDate) {
+        LOGGER.info("Validating Sample Date");
         if (validaFullDate(sampleDate.trim())){
             return sampleDate;
         } else {
@@ -59,11 +62,13 @@ public class CellDataValidator extends ValidatorTemplate implements DataValidato
     }
 
     private String validateRegistrationDate(String regDate) {
+        LOGGER.info("Validating Registration Date");
         return validaFullDate(regDate.trim())? regDate: (Year.now().getValue() - 1) + "0601";
     }
 
 
     private boolean validaFullDate(String fullDate) {
+        LOGGER.info("Validating Full Date");
         DateTimeFormatter formatter = new DateTimeFormatterBuilder()
                 .appendPattern("yyyyMMdd")
                 .parseStrict()

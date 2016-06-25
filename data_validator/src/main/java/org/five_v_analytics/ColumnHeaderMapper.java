@@ -1,12 +1,16 @@
 package org.five_v_analytics;
 
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.HashMap;
 import java.util.Map;
 
 public class ColumnHeaderMapper {
     private static Map<String, String> columnNames;
     private static Map<String, Integer> columnMap;
+    private static final Logger LOGGER = LoggerFactory.getLogger(ColumnHeaderMapper.class);
 
     static {
         columnNames = new HashMap<>();
@@ -45,6 +49,7 @@ public class ColumnHeaderMapper {
                 columnMap.put(columnNames.get(headers[i]), i);
             } else {
                 System.out.println("File contains unsupported Headers, please contact the support");
+                LOGGER.info("File contains unsupported Headers, please contact the support");
 //                System.exit(-1);
             }
         }

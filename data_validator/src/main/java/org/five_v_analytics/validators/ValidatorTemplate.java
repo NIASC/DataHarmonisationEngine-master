@@ -46,6 +46,7 @@ public abstract class ValidatorTemplate {
     }
 
     protected String validateLabCode(String labCode, String county) throws DataValidationException {
+        LOGGER.info("Validating LabCode");
         if (validateCounty(county) || !countyLabCodes.get(county).equals(labCode)){
             LOGGER.error("Validation Error, County code is {}, labCode is {}", county, labCode);
             throw new DataValidationException();
@@ -59,6 +60,7 @@ public abstract class ValidatorTemplate {
 
 
     protected String validateSwedishPersonalNumber(String value) throws DataValidationException{
+        LOGGER.info("Validating Swedish personal number");
         String personalNumberHash;
         // Check for nulls and false lengths
         if (value == null ||  value.length() < 10) {
@@ -149,6 +151,7 @@ public abstract class ValidatorTemplate {
     }
 
     protected String validateSnomed(String snomed) {
+        LOGGER.error("Validating snomed", snomed);
         generateSnomedList();
         String regSnomed = snomedCodes.get(snomed.trim());
         if (regSnomed != null) {
