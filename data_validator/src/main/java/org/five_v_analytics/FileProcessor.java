@@ -51,7 +51,7 @@ public class FileProcessor {
             while ((line = reader.readLine()) != null) {
                 System.out.println("Raw CSV data: " + line);
                 if (lineCount == 0) {
-                    createColumnHeadersMap(failureWriter, line);
+                    createColumnHeadersMap(failureWriter, successWriter, line);
                 } else {
                     LOGGER.info("Line number = {}", lineCount);
                     validateLine(successWriter, failureWriter, line);
@@ -64,10 +64,11 @@ public class FileProcessor {
         }
     }
 
-    private static void createColumnHeadersMap(BufferedWriter failureWriter, String line) throws IOException {
+    private static void createColumnHeadersMap(BufferedWriter failureWriter, BufferedWriter successWriter, String line) throws IOException {
         columnNames = getColumnNames(line);
         ColumnHeaderMapper.mapHeaderToIndex(columnNames);
         failureWriter.write(line + "\n");
+        successWriter.write(line + "\n");
     }
 
     private static void validateLine(BufferedWriter successWriter, BufferedWriter failureWriter, String line) throws IOException {
