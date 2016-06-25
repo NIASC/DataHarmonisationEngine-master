@@ -18,7 +18,7 @@ import java.util.Map;
 
 public class FileProcessor {
     private static final Logger LOGGER = LoggerFactory.getLogger(FileProcessor.class);
-    private static final String[] SPLITERS = {";",",","\t"," "};
+    private static final String[] SPLITTERS = {";",",","\t"," "};
     private static Path success;
     private static Path failure;
     private static DataValidator validator;
@@ -28,9 +28,11 @@ public class FileProcessor {
         validator = ValidatorFactory.getInstance(type);
         try {
             Files.walk(Paths.get(inputPath)).forEach(filePath -> {
-                if (Files.isRegularFile(filePath)) {
-                    createOutputDirectories(outputPath, filePath.getFileName().toString());
-                    processLine(filePath);
+                if(!filePath.getFileName().toString().equals(".DS_Store")){
+                    if (Files.isRegularFile(filePath)) {
+                        createOutputDirectories(outputPath, filePath.getFileName().toString());
+                        processLine(filePath);
+                    }
                 }
             });
         } catch (IOException e) {
@@ -108,7 +110,7 @@ public class FileProcessor {
     }
 
     private static String[] getColumnValues(String line){
-        for (String splitter : SPLITERS){
+        for (String splitter : SPLITTERS){
             String[] holder = splitLine(line, splitter);
             if(holder.length == columnNames.length){
                 return holder;
