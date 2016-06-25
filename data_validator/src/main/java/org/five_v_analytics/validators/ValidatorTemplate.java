@@ -22,6 +22,7 @@ public abstract class ValidatorTemplate {
 
     static {
         countyLabCodes = new HashMap<>();
+        countyLabCodes.put("00", "051");
         countyLabCodes.put("01", "088");
         countyLabCodes.put("03", "121");
         countyLabCodes.put("04", "131");
