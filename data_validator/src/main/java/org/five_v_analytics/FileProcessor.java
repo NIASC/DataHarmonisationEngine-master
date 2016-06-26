@@ -140,8 +140,7 @@ public class FileProcessor {
 
     private static String[] getColumnValues(String line){
         LOGGER.info("Splitting line {}", line);
-        String[] yle = splitLine(line, delimiter);
-        return yle;
+        return splitLine(line, delimiter);
     }
 
     private static String[] splitLine(String line, String splitter){
