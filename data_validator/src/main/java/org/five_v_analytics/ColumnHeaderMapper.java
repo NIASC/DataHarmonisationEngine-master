@@ -34,6 +34,7 @@ public class ColumnHeaderMapper {
 //      County
         columnNames.put("residc", "countyCode");
         columnNames.put("county", "countyCode");
+        columnNames.put("countycode", "countyCode");
 //      SNOMED
         columnNames.put("snomed", "snomed");
 //      Response Date
@@ -44,10 +45,10 @@ public class ColumnHeaderMapper {
         columnMap = new HashMap<>();
         String value;
         for (int i = 0; i < headers.length; i++) {
-            LOGGER.info("Indexing header \"{}\"", headers[i]);
-            value = columnNames.get(headers[i]);
+            LOGGER.info("Indexing header \"{}\" ", headers[i]);
+            value = columnNames.get(headers[i].toLowerCase());
             if (value != null) {
-                columnMap.put(columnNames.get(headers[i]), i);
+                columnMap.put(value, i);
             } else {
                 System.out.println("File contains unsupported Headers, please contact the support");
                 LOGGER.info("\"{}\" is unsupported Header, please contact the support", headers[i]);
