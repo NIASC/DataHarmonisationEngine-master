@@ -17,11 +17,12 @@ import java.util.Map;
 
 public class FileProcessor {
     private static final Logger LOGGER = LoggerFactory.getLogger(FileProcessor.class);
-    private static final String[] SPLITTERS = {";",",","\t"," "};
+    private static final String[] SPLITTERS = {";",",","\t"," ","[\t]+","[ ]+"};
     private static Path success;
     private static Path failure;
     private static DataValidator validator;
     private static String[] columnNames;
+    private static String delimiter = "";
 
     public static void process(String inputPath, String outputPath, String type) {
         validator = ValidatorFactory.getInstance(type);
@@ -52,7 +53,7 @@ public class FileProcessor {
             LOGGER.info("Processing file {}", filePath.getFileName().toString());
             while ((line = reader.readLine()) != null) {
                 System.out.println("Raw CSV data: " + line);
-                LOGGER.info("Raw CSV data: " + line);
+                LOGGER.info("Reading CSV data: " + line);
                 if (lineCount == 0) {
                     createColumnHeadersMap(failureWriter, successWriter, line);
                 } else {
@@ -79,13 +80,13 @@ public class FileProcessor {
     }
 
     private static void validateLine(BufferedWriter successWriter, BufferedWriter failureWriter, String line) throws IOException {
-        LOGGER.info("Validating line {}", line);
+        LOGGER.info("Validating line [{}]", line);
         Map<String, Integer> headers = ColumnHeaderMapper.getColumnMap();
         try {
             successWriter.write(validator.validateAndReturnLine(headers, getColumnValues(line)) + "\n");
-            LOGGER.info("validation finished for line {}",line);
+            LOGGER.info("validation finished successfully for line [{}]",line);
         }catch (DataValidationException e){
-            LOGGER.info("Line {} is incorrect, writing to failure directory", line);
+            LOGGER.info("Validation failed for line [{}], writing to failure directory", line);
             failureWriter.write(line + "\n");
         }
     }
@@ -124,19 +125,23 @@ public class FileProcessor {
     }
 
     private static String[] getColumnNames(String line){
-        return splitLine(line, "[ ;\\t]+");
+        LOGGER.info("Trying to get file delimiter");
+        String[] initial = splitLine(line, "[ ;\\t]+");
+        for (String splitter : SPLITTERS){
+            String[] holder = splitLine(line, splitter);
+            if(holder.length == initial.length){
+                delimiter = splitter;
+                LOGGER.info("File delimiter is {}",delimiter);
+                return holder;
+            }
+        }
+        return initial;
     }
 
     private static String[] getColumnValues(String line){
         LOGGER.info("Splitting line {}", line);
-        for (String splitter : SPLITTERS){
-            String[] holder = splitLine(line, splitter);
-            if(holder.length == columnNames.length){
-                return holder;
-            }
-        }
-       return splitLine(line, "[;\t ]+");
-
+        String[] yle = splitLine(line, delimiter);
+        return yle;
     }
 
     private static String[] splitLine(String line, String splitter){

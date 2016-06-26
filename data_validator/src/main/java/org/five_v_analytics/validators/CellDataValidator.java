@@ -22,14 +22,25 @@ public class CellDataValidator extends ValidatorTemplate implements DataValidato
     private CellDataValidator() { }
 
     public String validateAndReturnLine(Map<String, Integer> columns, String[] data) throws DataValidationException {
-        validateLabCode(data[columns.get("labCode")],data[columns.get("countyCode")]);
-        data[columns.get("pnr")] = validateSwedishPersonalNumber(data[columns.get("pnr")]);
-        validateSampleYear(data[columns.get("sampleYear")]);
+        if(columns.containsKey("labCode") && columns.containsKey("countyCode") && columns.containsKey("pnr")){
+            validateLabCode(data[columns.get("labCode")],data[columns.get("countyCode")]);
+            data[columns.get("pnr")] = validateSwedishPersonalNumber(data[columns.get("pnr")]);
+        }else{
+            LOGGER.info("Cannot validate [labCode], [countyCode] and [pnr]");
+            throw new DataValidationException();
+        }
+        if(columns.containsKey("sampleYear"))
+            validateSampleYear(data[columns.get("sampleYear")]);
+        else
+            LOGGER.info("Cannot validate [sampleYear]");
         if(columns.containsKey("regDate")){
             validateRegistrationDate(data[columns.get("regDate")]);
             data[columns.get("sampleDate")] = validateSampleDate(data[columns.get("sampleDate")], data[columns.get("regDate")]);
         }else{
-            data[columns.get("sampleDate")] = validateSampleDate(data[columns.get("sampleDate")]);
+            if(columns.containsKey("sampleDate"))
+                data[columns.get("sampleDate")] = validateSampleDate(data[columns.get("sampleDate")]);
+            else
+                LOGGER.info("Cannot validate [registration Date]");
         }
         if(columns.containsKey("snomed")){
             data[columns.get("snomed")] = validateSnomed(data[columns.get("snomed")]);

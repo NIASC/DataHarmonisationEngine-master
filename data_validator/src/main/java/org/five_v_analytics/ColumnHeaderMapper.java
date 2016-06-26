@@ -16,6 +16,7 @@ public class ColumnHeaderMapper {
         columnNames = new HashMap<>();
 //      Lab Code
         columnNames.put("labcode", "labCode");
+        columnNames.put("labkod","labCode");
 //      Personal Number
         columnNames.put("pnr", "pnr");
 //      Sample Year
@@ -45,13 +46,13 @@ public class ColumnHeaderMapper {
         columnMap = new HashMap<>();
         String value;
         for (int i = 0; i < headers.length; i++) {
-            LOGGER.info("Indexing header \"{}\" ", headers[i]);
+            LOGGER.info("Indexing header [{}] ", headers[i]);
             value = columnNames.get(headers[i].toLowerCase());
             if (value != null) {
                 columnMap.put(value, i);
             } else {
-                System.out.println("File contains unsupported Headers, please contact the support");
-                LOGGER.info("\"{}\" is unsupported Header, please contact the support", headers[i]);
+                System.out.println("File contains unsupported Header, please contact the support");
+                LOGGER.info("[{}] is unsupported Header, please contact the support", headers[i]);
 //                System.exit(-1);
             }
         }
