@@ -48,25 +48,30 @@ public abstract class ValidatorTemplate {
 
     protected String validateLabCode(String labCode, String county) throws DataValidationException {
         LOGGER.info("Validating LabCode");
-        if (validateCounty(county) || !countyLabCodes.get(county).equals(labCode)){
+        if (!validateCounty(county) || !countyLabCodes.get(county).equals(labCode)){
             LOGGER.error("Validation Error, County code is {}, labCode is {}", county, labCode);
             throw new DataValidationException();
         }
         return  labCode;
     }
 
-    private boolean validateCounty(String county) throws DataValidationException{
-        return !county.trim().matches("^\\d{2}") || Integer.parseInt(county) >= COUNTY_NUMBER;
+    protected boolean validateLabCode(String value) {
+        return countyLabCodes.containsValue(value);
     }
 
 
-    protected String validateSwedishPersonalNumber(String value) throws DataValidationException{
+    protected boolean validateCounty(String county) {
+        return county.trim().matches("^\\d{2}") && Integer.parseInt(county) >= COUNTY_NUMBER;
+    }
+
+
+    protected boolean validateSwedishPersonalNumber(String value){
         LOGGER.info("Validating Swedish personal number");
         String personalNumberHash;
         // Check for nulls and false lengths
         if (value == null ||  value.length() < 10) {
             LOGGER.error("Validation Error, personal number is incorrect", value);
-            throw new DataValidationException();
+            return false;
         }
 
         try {
@@ -83,7 +88,7 @@ public abstract class ValidatorTemplate {
                 value = value.substring(0, 10);
             } else {
                 LOGGER.error("Validation Error, personal number is incorrect", value);
-                throw new DataValidationException();
+                return false;
             }
             // Remove check number
             int check = Integer.parseInt(value.substring(9, 10));
@@ -111,19 +116,15 @@ public abstract class ValidatorTemplate {
             boolean isCoOrdinationNumber = Integer.parseInt(value.substring(4, 6), 10) > 60;
             boolean isMale = !((Integer.parseInt(value.substring(8, 9)) % 2) == 0);
             boolean isCompany = Integer.parseInt(value.substring(2, 4), 10) >= 20;
-            if (!isValid){
-                LOGGER.error("Validation Error, personal number is incorrect", value);
-                throw new DataValidationException();
-            }
-            return encryptPersonalNumber(value);
+            return isValid;
         } catch (NumberFormatException ex) {
             ex.printStackTrace();
         }
         LOGGER.error("Validation Error, personal number is incorrect", value);
-        throw new DataValidationException();
+        return false;
     }
 
-    private String encryptPersonalNumber(String pnr) {
+    protected String encryptPersonalNumber(String pnr) {
         MessageDigest digest = null;
         try {
             digest = MessageDigest.getInstance("SHA-256");

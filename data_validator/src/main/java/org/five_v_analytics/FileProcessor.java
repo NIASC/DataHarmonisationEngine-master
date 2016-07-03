@@ -58,7 +58,11 @@ public class FileProcessor {
                     createColumnHeadersMap(failureWriter, successWriter, line);
                 } else {
                     LOGGER.info("Line number = {}", lineCount);
-                    validateLine(successWriter, failureWriter, line);
+                    if (ColumnHeaderMapper.getColumnMap().isEmpty()){
+                        validateColumn(successWriter, failureWriter, line);
+                    } else {
+                        validateLine(successWriter, failureWriter, line);
+                    }
                 }
                 lineCount++;
             }
@@ -74,9 +78,41 @@ public class FileProcessor {
         LOGGER.info("Mapping column headers");
         columnNames = getColumnNames(line);
         ColumnHeaderMapper.mapHeaderToIndex(columnNames);
+        if(ColumnHeaderMapper.getColumnMap().isEmpty()){
+            LOGGER.info("File doesn't have the header line");
+            validateColumn(successWriter, failureWriter, line);
+            return;
+        }
         LOGGER.info("Writing column headers in success and failure files");
         failureWriter.write(line + "\n");
         successWriter.write(line + "\n");
+    }
+
+    private static void validateColumn(BufferedWriter successWriter, BufferedWriter failureWriter, String line) {
+        for (String splitter: SPLITTERS) {
+            String[] splicedLine = splitLine(line, splitter);
+            String result = "";
+            if(splicedLine.length > 1){
+                for (String value: splicedLine) {
+                    String validationResult = validator.validateColumnValue(value);
+                    if (validationResult == null){
+                        try {
+                            failureWriter.write(line + "\n");
+                            return;
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    result += validationResult + ",";
+                }
+                try {
+                    successWriter.write(result + "\n");
+                    return;
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
     }
 
     private static void validateLine(BufferedWriter successWriter, BufferedWriter failureWriter, String line) throws IOException {

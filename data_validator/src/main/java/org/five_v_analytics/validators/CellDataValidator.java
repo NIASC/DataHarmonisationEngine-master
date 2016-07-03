@@ -24,15 +24,19 @@ public class CellDataValidator extends ValidatorTemplate implements DataValidato
     public String validateAndReturnLine(Map<String, Integer> columns, String[] data) throws DataValidationException {
         if(columns.containsKey("labCode") && columns.containsKey("countyCode") && columns.containsKey("pnr")){
             validateLabCode(data[columns.get("labCode")],data[columns.get("countyCode")]);
-            data[columns.get("pnr")] = validateSwedishPersonalNumber(data[columns.get("pnr")]);
+           if (validateSwedishPersonalNumber(data[columns.get("pnr")])){
+               data[columns.get("pnr")] = encryptPersonalNumber(data[columns.get("pnr")]);
+           }
         }else{
             LOGGER.info("Cannot validate [labCode], [countyCode] and [pnr]");
             throw new DataValidationException();
         }
-        if(columns.containsKey("sampleYear"))
+        if(columns.containsKey("sampleYear")) {
             validateSampleYear(data[columns.get("sampleYear")]);
-        else
-            LOGGER.info("Cannot validate [sampleYear]");
+        }
+        else {
+            LOGGER.info("[sampleYear] Column doesn't exist");
+        }
         if(columns.containsKey("regDate")){
             validateRegistrationDate(data[columns.get("regDate")]);
             data[columns.get("sampleDate")] = validateSampleDate(data[columns.get("sampleDate")], data[columns.get("regDate")]);
@@ -47,19 +51,28 @@ public class CellDataValidator extends ValidatorTemplate implements DataValidato
         }
         return Arrays.toString(data);
     }
+    public String validateColumnValue(String value){
+        if (validateSwedishPersonalNumber(value)){
+            return encryptPersonalNumber(value);
+        }
+        return (validateSampleYear(value) ||
+                validaFullDate(value) ||
+                validateCounty(value) ||
+                validateLabCode(value)) ? value : null;
+    }
 
     private String validateSampleDate(String sampleDate) {
         LOGGER.info("Validating sampleDate");
         return validaFullDate(sampleDate.trim()) ? sampleDate : (Year.now().getValue() - 1) + "0601";
     }
 
-    private String validateSampleYear(String sampleYear) throws DataValidationException {
+    private boolean validateSampleYear(String sampleYear) {
         LOGGER.info("Validating Sample Year");
         if (!sampleYear.trim().matches("^\\d{4}")  || Integer.parseInt(sampleYear) < RESEARCH_START_YEAR){
             LOGGER.error("Sample year parsing error, {}", sampleYear);
-            throw new DataValidationException();
+            return false;
         }
-        return sampleYear;
+        return true;
     }
 
     private String validateSampleDate(String sampleDate, String regDate) {
@@ -71,11 +84,10 @@ public class CellDataValidator extends ValidatorTemplate implements DataValidato
         }
     }
 
-    private String validateRegistrationDate(String regDate) {
+    private boolean validateRegistrationDate(String regDate) {
         LOGGER.info("Validating Registration Date");
-        return validaFullDate(regDate.trim())? regDate: (Year.now().getValue() - 1) + "0601";
+        return validaFullDate(regDate.trim());
     }
-
 
     private boolean validaFullDate(String fullDate) {
         LOGGER.info("Validating Full Date");

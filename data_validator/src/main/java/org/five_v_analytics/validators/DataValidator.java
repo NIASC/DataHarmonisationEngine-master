@@ -7,4 +7,5 @@ import java.util.Map;
 
 public interface DataValidator {
     String validateAndReturnLine(Map<String, Integer> columns, String[] data) throws DataValidationException, InvalidDataException;
+    String validateColumnValue(String value);
 }
