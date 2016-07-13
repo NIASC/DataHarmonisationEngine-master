@@ -61,7 +61,7 @@ public abstract class ValidatorTemplate {
 
 
     protected boolean validateCounty(String county) {
-        return county.trim().matches("^\\d{2}") && Integer.parseInt(county) >= COUNTY_NUMBER;
+        return county.trim().matches("^\\d{2}") && Integer.parseInt(county) <= COUNTY_NUMBER;
     }
 
 
