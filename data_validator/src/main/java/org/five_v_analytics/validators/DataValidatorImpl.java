@@ -11,14 +11,44 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.LocalDate;
+import java.time.Year;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
+import java.time.format.DateTimeParseException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-public abstract class ValidatorTemplate {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ValidatorTemplate.class);
-    private final int COUNTY_NUMBER = 25;
+public class DataValidatorImpl implements DataValidator {
+    private static final Logger LOGGER = LoggerFactory.getLogger(DataValidatorImpl.class);
+    private static final String CELL_SNOMED_PATH = "./snomed_codes/nkc_translation_cell_diag.csv";
+    private static final String PAD_SNOMED_PATH = "./snomed_codes/nkc_translation_pad_diag.csv";
+    private static final int COUNTY_NUMBER = 25;
+    private static final int RESEARCH_START_YEAR = 1960;
     private static final Map<String, String> countyLabCodes;
     public static  Map<String,String> snomedCodes = new HashMap<>();
+    private String snomedPath;
+
+
+
+    public DataValidatorImpl(String type) {
+        this.snomedPath = getSnomedPath(type);
+        generateSnomedList();
+    }
+
+    private String getSnomedPath(String type) {
+        switch (type){
+            case "i":
+            case "c":
+                return  CELL_SNOMED_PATH;
+            case "p":
+                return PAD_SNOMED_PATH;
+
+        }
+
+        return null;
+    }
 
     static {
         countyLabCodes = new HashMap<>();
@@ -136,7 +166,7 @@ public abstract class ValidatorTemplate {
     }
 
     private void generateSnomedList() {
-        try (BufferedReader reader = Files.newBufferedReader(Paths.get("./snomed_codes/nkc_translation_cell_diag.csv"), Charset.forName("Cp1252"))) {
+        try (BufferedReader reader = Files.newBufferedReader(Paths.get(snomedPath), Charset.forName("Cp1252"))) {
             String line;
             String[] lines;
             int lineCount = 0;
@@ -154,7 +184,6 @@ public abstract class ValidatorTemplate {
 
     protected String validateSnomed(String snomed) {
         LOGGER.error("Validating snomed", snomed);
-        generateSnomedList();
         String regSnomed = snomedCodes.get(snomed.trim());
         if (regSnomed != null) {
             return regSnomed;
@@ -163,5 +192,88 @@ public abstract class ValidatorTemplate {
             return snomed;
         }
 
+    }
+
+    public String validateAndReturnLine(Map<String, Integer> columns, String[] data) throws DataValidationException {
+        if(columns.containsKey("labCode") && columns.containsKey("countyCode") && columns.containsKey("pnr")){
+            validateLabCode(data[columns.get("labCode")],data[columns.get("countyCode")]);
+            if (validateSwedishPersonalNumber(data[columns.get("pnr")])){
+                data[columns.get("pnr")] = encryptPersonalNumber(data[columns.get("pnr")]);
+            }
+        }else{
+            LOGGER.info("Cannot validate [labCode], [countyCode] and [pnr]");
+            throw new DataValidationException();
+        }
+        if(columns.containsKey("sampleYear")) {
+            validateSampleYear(data[columns.get("sampleYear")]);
+        }
+        else {
+            LOGGER.info("[sampleYear] Column doesn't exist");
+        }
+        if(columns.containsKey("regDate")){
+            validateRegistrationDate(data[columns.get("regDate")]);
+            data[columns.get("sampleDate")] = validateSampleDate(data[columns.get("sampleDate")], data[columns.get("regDate")]);
+        }else{
+            if(columns.containsKey("sampleDate"))
+                data[columns.get("sampleDate")] = validateSampleDate(data[columns.get("sampleDate")]);
+            else
+                LOGGER.info("Cannot validate [registration Date]");
+        }
+        if(columns.containsKey("snomed")){
+            data[columns.get("snomed")] = validateSnomed(data[columns.get("snomed")]);
+        }
+        return Arrays.toString(data);
+    }
+    public String validateColumnValue(String value){
+        if (validateSwedishPersonalNumber(value)){
+            return encryptPersonalNumber(value);
+        }
+        return (validateSampleYear(value) ||
+                validateFullDate(value) ||
+                validateCounty(value) ||
+                validateLabCode(value)) ? value : null;
+    }
+
+    private String validateSampleDate(String sampleDate) {
+        LOGGER.info("Validating sampleDate");
+        return validateFullDate(sampleDate.trim()) ? sampleDate : (Year.now().getValue() - 1) + "0601";
+    }
+
+    private boolean validateSampleYear(String sampleYear) {
+        LOGGER.info("Validating Sample Year");
+        if (!sampleYear.trim().matches("^\\d{4}")  || Integer.parseInt(sampleYear) < RESEARCH_START_YEAR){
+            LOGGER.error("Sample year parsing error, {}", sampleYear);
+            return false;
+        }
+        return true;
+    }
+
+    private String validateSampleDate(String sampleDate, String regDate) {
+        LOGGER.info("Validating Sample Date");
+        if (validateFullDate(sampleDate.trim())){
+            return sampleDate;
+        } else {
+            return validateFullDate(regDate.trim())? regDate: (Year.now().getValue() - 1) + "0601";
+        }
+    }
+
+    private boolean validateRegistrationDate(String regDate) {
+        LOGGER.info("Validating Registration Date");
+        return validateFullDate(regDate.trim());
+    }
+
+    private boolean validateFullDate(String fullDate) {
+        LOGGER.info("Validating Full Date");
+        DateTimeFormatter formatter = new DateTimeFormatterBuilder()
+                .appendPattern("yyyyMMdd")
+                .parseStrict()
+                .toFormatter();
+        try {
+            LocalDate.parse(fullDate, formatter);
+            return true;
+        } catch (DateTimeParseException e) {
+            LOGGER.error("Date parsing error, Data malformatted {}", fullDate);
+            return false;
+        }
     }
 }

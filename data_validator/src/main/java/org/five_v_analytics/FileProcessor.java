@@ -2,8 +2,8 @@ package org.five_v_analytics;
 
 import com.ibm.icu.text.CharsetDetector;
 import org.five_v_analytics.exceptions.DataValidationException;
-import org.five_v_analytics.factories.ValidatorFactory;
 import org.five_v_analytics.validators.DataValidator;
+import org.five_v_analytics.validators.DataValidatorImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.*;
@@ -25,7 +25,7 @@ public class FileProcessor {
     private static String delimiter = "";
 
     public static void process(String inputPath, String outputPath, String type) {
-        validator = ValidatorFactory.getInstance(type);
+        validator = new DataValidatorImpl(type);
         try {
             LOGGER.info("Searching for files");
             Files.walk(Paths.get(inputPath)).forEach(filePath -> {
