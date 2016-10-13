@@ -27,19 +27,43 @@ public class ColumnHeaderMapper {
         columnNames.put("scrtype", "ScreeningType");
 //      Sample Date
         columnNames.put("smeardate", "sampleDate");
+        columnNames.put("padyear", "sampleDate");
         columnNames.put("sampledate", "sampleDate");
-        columnNames.put("sampledate", "sampleDate");
-
+        columnNames.put("sample_date", "sampleDate");
 //      Registration Date
         columnNames.put("regdate", "regDate");
+//      Response Date
+        columnNames.put("responsedate", "responseDate");
+//      Diagnosis date	
+        columnNames.put("diagdate", "diagDate");
 //      County
         columnNames.put("residc", "countyCode");
         columnNames.put("county", "countyCode");
         columnNames.put("countycode", "countyCode");
 //      SNOMED
         columnNames.put("snomed", "snomed");
-//      Response Date
-        columnNames.put("responsedate", "responseDate");
+//      Topology code	
+        columnNames.put("topocode", "topoCode");
+//      Referral number		
+        columnNames.put("referralnr", "refNR");
+//      Referral type		
+        columnNames.put("referral_type", "refType");        
+        columnNames.put("referraltype", "refType");                
+//      Rem clinic name	
+        columnNames.put("remclinic", "remClinic");
+        columnNames.put("rem_clinic", "remClinic");
+//      Ans clinic name	
+        columnNames.put("ansclinic", "ansClinic");
+        columnNames.put("ans_clinic", "ansClinic");
+//      Sample number	
+        columnNames.put("samplenr", "sampleNR");
+        columnNames.put("sample_nr", "sampleNR");
+//      Diagnosis number
+        columnNames.put("diagnr", "diagNR");
+//      Screening type
+        columnNames.put("scr_type", "scrType");                
+        columnNames.put("scrtype", "scrType");                
+
     }
 
     public static void mapHeaderToIndex(String[] headers) {
