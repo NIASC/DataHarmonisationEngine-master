@@ -20,6 +20,7 @@ public class ColumnHeaderMapper {
 //      Personal Number
         columnNames.put("pnr", "pnr");
 //      Sample Year
+        columnNames.put("padyear", "sampleYear");
         columnNames.put("sampleyear", "sampleYear");
         columnNames.put("smearyear", "sampleYear");
         columnNames.put("sample_year", "sampleYear");
@@ -27,9 +28,10 @@ public class ColumnHeaderMapper {
         columnNames.put("scrtype", "ScreeningType");
 //      Sample Date
         columnNames.put("smeardate", "sampleDate");
-        columnNames.put("padyear", "sampleDate");
         columnNames.put("sampledate", "sampleDate");
         columnNames.put("sample_date", "sampleDate");
+        columnNames.put("paddate", "sampleDate");
+        columnNames.put("pad_date", "sampleDate");
 //      Registration Date
         columnNames.put("regdate", "regDate");
 //      Response Date
@@ -64,20 +66,24 @@ public class ColumnHeaderMapper {
         columnNames.put("scr_type", "scrType");                
         columnNames.put("scrtype", "scrType");                
 
+//      Doctor
+        columnNames.put("Doctor", "Doctor");                
+        columnNames.put("doctor", "Doctor");                
+
     }
 
     public static void mapHeaderToIndex(String[] headers) {
         columnMap = new HashMap<>();
         String value;
         for (int i = 0; i < headers.length; i++) {
-            LOGGER.info("Indexing header [{}] ", headers[i]);
-            value = columnNames.get(headers[i].toLowerCase());
+            value = columnNames.get(headers[i].toLowerCase().trim());
             if (value != null) {
+                LOGGER.info("Indexing header [{}] ", headers[i]);
                 columnMap.put(value, i);
             } else {
                 System.out.println("File contains unsupported Header, please contact the support");
-                LOGGER.info("[{}] is unsupported Header, please contact the support", headers[i]);
-//                System.exit(-1);
+//              LOGGER.info("[{}] is unsupported Header, please contact the support", headers[i]);
+//              System.exit(-1);
             }
         }
     }

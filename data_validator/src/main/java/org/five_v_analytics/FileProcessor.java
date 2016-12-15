@@ -19,6 +19,7 @@ import java.nio.file.Paths;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 
 
@@ -57,16 +58,17 @@ public class FileProcessor {
 				BufferedWriter failureWriter = Files.newBufferedWriter(failure)) {
 			String line;
 			int lineCount = 0;
+			int doctorPos;
 
 			LOGGER.info("Processing file {}", filePath.getFileName().toString());
 			while ((line = reader.readLine()) != null) {
 				System.out.println("Reading Raw CSV data line number: " + lineCount);
 				LOGGER.info("Reading CSV data: " + lineCount);
+				//if we are reading first file create createColumnHeadersMap
 				if (lineCount == 0) {
 					createColumnHeadersMap(failureWriter, successWriter, line);
 					//get column names to define length of it
-					columnNames = getColumnNames(line);
-					LOGGER.info("columnNames.length: " + columnNames.length);
+					columnNames = getColumnNames(line);										
 				} else {
 					LOGGER.info("Line number = {}", lineCount);
 					if (ColumnHeaderMapper.getColumnMap().isEmpty()) {
@@ -91,17 +93,26 @@ public class FileProcessor {
 		ColumnHeaderMapper.mapHeaderToIndex(columnNames);
 		
 		//TODO: here it will be much better to guess based on value, eg 1st is labcode, 2nd is pnr etc //Integer.parseInt(columnNames[0].trim()) == 88
-		if((columnNames[0].trim().equals("88")) && ColumnHeaderMapper.getColumnMap().isEmpty()) {
-			String lab088_header = "labcode,pnr,sampleyear,referralnr,referral_type,sample_date,reg_date,rem_clinic,ans_clinic,deb_clinic,doctor,sample_nr,topo,diag_nr,snomed,sample_type,obliterated,county,municip"; 
+		if((columnNames[0].trim().equals("88") || columnNames[0].trim().equals("088")) && ColumnHeaderMapper.getColumnMap().isEmpty()) {
+			String lab088_header = "labcode,pnr,sampleyear,referralnr,scr_type,sample_date,reg_date,rem_clinic,ans_clinic,deb_clinic,doctor,sample_nr,topo,diag_nr,snomed,sample_type,obliterated,county,municip"; 
 			ColumnHeaderMapper.mapHeaderToIndex(splitLine(lab088_header, ","));
 			LOGGER.info("File doesn't have the header line, but it seems files comes from lab 088 and its columnNames are: " + lab088_header);
-		}else if ((columnNames[0].trim().equals("127")) && ColumnHeaderMapper.getColumnMap().isEmpty()) {
-			String lab127_header = "labcode,pnr,sampleyear,referralnr,referraltype,sampledate,remclinic,ansclinic,debclinic,doctor,samplenr,snomed,sampletype,obliterated,county,municip,responsedate"; 
+		} else if ((columnNames[0].trim().equals("127")) && ColumnHeaderMapper.getColumnMap().isEmpty()) {
+			String lab127_header = "labcode,pnr,sampleyear,referralnr,referraltype,sampledate,regdate,remclinic,ansclinic,debclinic,doctor,samplenr,scr_type,snomed,sampletype,obliterated,county,municip,responsedate"; 
 			ColumnHeaderMapper.mapHeaderToIndex(splitLine(lab127_header, ","));
-			LOGGER.info("File doesn't have the header line, but it seems files comes from lab 088 and its columnNames are: " + lab127_header);
-		}
-
-		if (ColumnHeaderMapper.getColumnMap().isEmpty()) {
+			LOGGER.info("File doesn't have the header line, but it seems files comes from lab 127 and its columnNames are: " + lab127_header);
+		} else if ((columnNames[0].trim().equals("551")) && ColumnHeaderMapper.getColumnMap().isEmpty()) {
+			LOGGER.info("File doesn't have the header line, but it seems files comes from lab 551 and its columnNames are: ");
+			String lab551_header = "labcode,pnr,sampleyear,referralnr,scrtype,sampledate,regdate,remclinic,ansclinic,debclinic,doctor,notnown1,notnown2,snomed,sampletype,obliterated,county,municip,responsedate";
+			ColumnHeaderMapper.mapHeaderToIndex(splitLine(lab551_header, ","));
+			LOGGER.info("File doesn't have the header line, but it seems files comes from lab 551 and its columnNames are: " + lab551_header);						
+		} else if ((columnNames[0].trim().equals("541")) && ColumnHeaderMapper.getColumnMap().isEmpty()) {
+			LOGGER.info("File doesn't have the header line, but it seems files comes from lab 541 and its columnNames are: ");
+			String lab541_header = "labcode,pnr,sampleyear,referralnr,scrtype,sampledate,regdate,remclinic,ansclinic,debclinic,doctor,notnown1,notnown2,snomed,sampletype,obliterated,county,municip,responsedate";
+			ColumnHeaderMapper.mapHeaderToIndex(splitLine(lab541_header, ",")); 
+			LOGGER.info("File doesn't have the header line, but it seems files comes from lab 541 and its columnNames are: " + lab541_header);
+						
+		} else if (ColumnHeaderMapper.getColumnMap().isEmpty()) {
 			LOGGER.info("File doesn't have the header line");
 			validateColumn(successWriter, failureWriter, line);
 			return;
@@ -109,7 +120,7 @@ public class FileProcessor {
 		LOGGER.info("Writing column headers in success and failure files");
 		// \\//:
 		// successWriter.write(line + "\n");
-		successWriter.write("labCode,countyCode,pnr,sampleYear,regDate,sampleDate,snomed,topoCode,refNR,remClinic,ansClinic,sampleNR,diagNR,responseDate,diagDate,scrType,Flag_correct,Comment"+ "\n");
+		successWriter.write("labCode,countyCode,pnr,sampleYear,regDate,sampleDate,diagDate,responseDate,Age,scrType,snomed,hpv_cell,topoCode,refNR,remClinic,ansClinic,sampleNR,diagNR,File_type,Flag_correct,Comment,"+ "\n");
 		LOGGER.info("Writing column headers in failure file");
 		failureWriter.write(line + "\n");
 	}
@@ -141,10 +152,34 @@ public class FileProcessor {
 		}
 	}
 
-	private static void validateLine(BufferedWriter successWriter, BufferedWriter failureWriter, String line, int columnNames_length)
-			throws IOException {
+	private static void validateLine(BufferedWriter successWriter, BufferedWriter failureWriter, String line, int columnNames_length) throws IOException {
 		// LOGGER.info("Validating line [{}]", line);
 		Map<String, Integer> headers = ColumnHeaderMapper.getColumnMap();
+	    LOGGER.info("headers: " + headers); 
+		
+		//TODO:-----------------------------------------------------------------------
+		//check if columnNames contains doctor as it sometimes contains name surname
+		//and might create problems during tokenizing, so column names doesn't correpont to column valies
+		//It is writtnet on fly so needs refactoring 
+		
+		//create new updates headrers
+		final Map<String, Integer> updated_headers_less = new HashMap<>();		
+		final Map<String, Integer> updated_headers_more = new HashMap<>();		
+
+		//populate each of them 
+		for (String key : headers.keySet()) {
+			updated_headers_more.put(key, headers.get(key)); 
+		}
+
+		for (String key : headers.keySet()) {
+			updated_headers_less.put(key, headers.get(key)); 
+		}
+	
+		//now determine position of doctor valieble
+		int docPos = -1;		
+		if ( ! (headers.get("Doctor") ==  null)){
+			docPos = headers.get("Doctor"); 
+		}
 		
 		//Check if length of line is equal to length of 
 		if ( getColumnValues(line).length == columnNames_length) {
@@ -158,8 +193,42 @@ public class FileProcessor {
 				LOGGER.info("Validation failed for line [{}], writing to failure directory"); // line
 				failureWriter.write(line + "\n");
 			}
+		} else if ( getColumnValues(line).length < columnNames_length && docPos >= 0) {
+			//TODO:-----------------------------------------------------------------------
+			//shift columns after doctor
+			for (String key : updated_headers_less.keySet()) {
+				if ( updated_headers_less.get(key) > docPos){
+					updated_headers_less.put(key, updated_headers_less.get(key) - (columnNames_length - getColumnValues(line).length));
+				} 
+			}
+		    LOGGER.info("headers: " + headers); 
+		    LOGGER.info("final_updated_headers_less: " + updated_headers_less); 
+
+			try {
+			    successWriter.write(validator.validateAndReturnLine(updated_headers_less, getColumnValues(line)).toString().replaceAll(" ", "").replaceAll("\\[", "").replaceAll("\\]", "") + "\n");
+			    LOGGER.info("validation finished successfully for line [{}]"); // line
+			} catch (DataValidationException e) {
+				LOGGER.info("Validation failed for line [{}], writing to failure directory"); // line
+				failureWriter.write(line + "\n");
+			}
+		} else if ( getColumnValues(line).length > columnNames_length && docPos >= 0){
+			//TODO:-----------------------------------------------------------------------
+			//shift columns after doctor
+			for (String key : updated_headers_more.keySet()) {
+				if ( updated_headers_more.get(key) > docPos){
+					updated_headers_more.put(key, updated_headers_more.get(key) + (getColumnValues(line).length - columnNames_length));
+				}
+			}
+		    LOGGER.info("updated_headers_more" + updated_headers_more); 
+			try {
+			    successWriter.write(validator.validateAndReturnLine(updated_headers_more, getColumnValues(line)).toString().replaceAll(" ", "").replaceAll("\\[", "").replaceAll("\\]", "") + "\n");
+			    LOGGER.info("validation finished successfully for line [{}]"); // line
+			} catch (DataValidationException e) {
+				LOGGER.info("Validation failed for line [{}], writing to failure directory"); // line
+				failureWriter.write(line + "\n");
+			}
 		} else {
-			LOGGER.info("Validation failed for line [{}], it has diffeternt length than its headers. writing to failure directory"); // line
+			LOGGER.info("Validation failed for line [{}], it has diffeternt length " + getColumnValues(line).length + " than its headers = "  + columnNames_length + " writing to failure directory"); // line
 			failureWriter.write(line + "\n");
 		}
 		
@@ -167,7 +236,8 @@ public class FileProcessor {
 
 	private static void createOutputDirectories(String outputPath, String fileName) {
 		try {
-			Path output = Paths.get(outputPath + "/" + fileName);
+			//\\//:
+			Path output = Paths.get(outputPath); // + "/" + fileName
 			Files.createDirectories(output);
 			Path successDirectory = Paths.get(output.toString() + "/success");
 			Path failureDirectory = Paths.get(output.toString() + "/failure");
