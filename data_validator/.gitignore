@@ -4,3 +4,5 @@
 
 #Project Specific Ignores
 target
+classes
+src/main/resources
