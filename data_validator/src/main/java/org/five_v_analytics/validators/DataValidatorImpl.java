@@ -4,6 +4,7 @@ import org.five_v_analytics.exceptions.DataValidationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 import java.text.DateFormat;
 import java.text.ParseException;
@@ -29,9 +30,10 @@ import java.util.*;
 
 public class DataValidatorImpl implements DataValidator {
 	private static final Logger LOGGER = LoggerFactory.getLogger(DataValidatorImpl.class);
-	private static final String CELL_SNOMED_PATH = "./snomed_codes/nkc_translation_cell_diag.csv";
-	private static final String PAD_SNOMED_PATH = "./snomed_codes/nkc_translation_pad_diag.csv";
-	private static final String CELL_PAD_SNOMED_PATH = "./snomed_codes/nkc_translation_cell_pad_diag.csv";
+	//TODO: Snomed path should go as input option
+	private static final String CELL_SNOMED_PATH = "/home/davbzh/DataHarmonisationEngine-master/data_validator/snomed_codes/nkc_translation_cell_diag.csv";
+	private static final String PAD_SNOMED_PATH = "/home/davbzh/DataHarmonisationEngine-master/data_validator/snomed_codes/nkc_translation_pad_diag.csv";
+	private static final String CELL_PAD_SNOMED_PATH = "/home/davbzh/DataHarmonisationEngine-master/data_validator/snomed_codes/nkc_translation_cell_pad_diag.csv";
 	private static final int COUNTY_NUMBER = 25;
 	private static final int RESEARCH_START_YEAR = 1960;
 	private static final Map<String, String> countyLabCodes;
@@ -40,26 +42,31 @@ public class DataValidatorImpl implements DataValidator {
 	private static final Map<String, String> CELLsnomedCodes;
 	public static Map<String, String> snomedCodes = new HashMap<>();
 	private String snomedPath;
+	private String inputfileName;
+	private String  extraHPV;
+	private String  phrase;
 
-	public DataValidatorImpl(String type) {
-		this.snomedPath = getSnomedPath(type);
-		generateSnomedList();
-	}
-	
-	//TODO: we need to create one hashmap for all snomed codes  
-	private String getSnomedPath(String type) {
-		switch (type) {
-		case "i":
-		case "c":
-			return CELL_SNOMED_PATH;
-		case "p":
-			return PAD_SNOMED_PATH;
-		case "cp":
-			return CELL_PAD_SNOMED_PATH;
+	public DataValidatorImpl(String type, String inputPath, String phrase) {
+		//TODO: we need to create one hashmap for all snomed codes
+		this.snomedPath = "";
+		this.inputfileName =  "";
+		this.extraHPV = "";
+		this.phrase = phrase;
+
+		if( type.equals("c")){
+				this.snomedPath = CELL_SNOMED_PATH;
+				generateSnomedList();
+		} else if (type.equals("p")) {
+				this.snomedPath = PAD_SNOMED_PATH;
+				generateSnomedList();
+		} else if (type.equals("cp")) {
+				this.snomedPath = CELL_PAD_SNOMED_PATH;
+				generateSnomedList();
+		} else if (type.equals("e")) {
+				this.inputfileName =  inputPath;
+				this.extraHPV = "HPV";
 		}
-		return null;
-	}	
-	
+	}
 
 	static {
 		countyLabCodes = new HashMap<>();
@@ -100,6 +107,7 @@ public class DataValidatorImpl implements DataValidator {
 		countyLabCodes.put("631", "23");
 		countyLabCodes.put("641", "24");
 		countyLabCodes.put("651", "25");
+		countyLabCodes.put("657", "25");
 	}
 
 	static {
@@ -177,7 +185,6 @@ public class DataValidatorImpl implements DataValidator {
 		HPVsnomedCodes.put("E33484", "HPV");
 		HPVsnomedCodes.put("E33485", "HPV");
 		HPVsnomedCodes.put("E33489", "HPV");
-		
 	}
 
 	static {
@@ -199,17 +206,28 @@ public class DataValidatorImpl implements DataValidator {
 		CELLsnomedCodes.put("M81403", "CELL");
 	}
 
-	protected String validateLabCode(String labCode, String county) throws DataValidationException {
-		LOGGER.info("Validating LabCode {} and County {}", labCode, county);
+	protected String cleanPNR (String value) {
+		// Remove dash and plus
+		value = value.trim().replace("-", "").replace("+", "");
+        if (value.length() == 10) {
+			value = "19" + value; //.substring(0, 10);
+		}
+		return value;
+	}
+
+	//protected String validateLabCode(String labCode, String county) throws DataValidationException {
+	protected String validateLabCode(String labCode, String county) {
+			LOGGER.info("Validating LabCode {} and County {}", labCode, county);
 		if ( !labCode.trim().matches("\\d+")){
 			LOGGER.error("Validation Error, labCode {} contains illigeal characters", labCode);
-			throw new DataValidationException();
+			//throw new DataValidationException();
 		}
+		/*TODO: Check if this is necesaary
 		if (!validateCounty(county) || !countyLabCodes.get(labCode).equals(county)) {
 			LOGGER.error("Validation Error, County code {} and labCode {} doesn't match, Check it", county, labCode);
-			// \\//:
 			// throw new DataValidationException();
 		}
+		*/
 		return labCode;
 	}
 
@@ -232,10 +250,9 @@ public class DataValidatorImpl implements DataValidator {
 
 		try {
 			// Remove dash and plus
-			value = value.trim().replace("-", "").replace("+", "");
+			value = cleanPNR(value);
 
 			String century = "";
-
 			// Remove century and check number
 			if (value.length() == 12) {
 				century = value.substring(0, 2);
@@ -246,6 +263,7 @@ public class DataValidatorImpl implements DataValidator {
 				LOGGER.error("Validation Error, personal number is incorrect", value);
 				return false;
 			}
+
 			// Remove check number
 			int check = Integer.parseInt(value.substring(9, 10));
 			String sValue = value.substring(0, 9);
@@ -280,14 +298,16 @@ public class DataValidatorImpl implements DataValidator {
 		return false;
 	}
 
-	protected String encryptPersonalNumber(String pnr) {
+	protected String encryptPersonalNumber(String pnr, String phrase) {
+
+		String pnrphrase = phrase + pnr + phrase;
 		MessageDigest digest = null;
 		try {
 			digest = MessageDigest.getInstance("SHA-256");
 		} catch (NoSuchAlgorithmException e) {
 			e.printStackTrace();
 		}
-		byte[] hash = digest.digest(pnr.getBytes());
+		byte[] hash = digest.digest(pnrphrase.getBytes());
 		return String.format("%064x", new java.math.BigInteger(1, hash));
 	}
 
@@ -325,7 +345,7 @@ public class DataValidatorImpl implements DataValidator {
 
 	//\\//:
 	public static long getDifferenceYears(String string_d1, String string_d2) {
-		DateFormat df = new SimpleDateFormat("yyyymmdd");
+		DateFormat df = new SimpleDateFormat("yyyyMMdd");
 		Date startDate;
 		Date endDate;
 		long diff = 0; 
@@ -342,7 +362,6 @@ public class DataValidatorImpl implements DataValidator {
 
 	//\\//:
 	public String validateAndReturnLine(Map<String, Integer> columns, String[] data) throws DataValidationException {
-
 		int labCode_pos;
 		//int countyCode_pos;
 		int pnr_pos;
@@ -376,41 +395,71 @@ public class DataValidatorImpl implements DataValidator {
 		
 		List<String> sortedData = new ArrayList<String>();
 
-		if (columns.containsKey("labCode")) { //&& columns.containsKey("countyCode")
-			try {
-				labCode_pos = columns.get("labCode");
-				//countyCode_pos = columns.get("countyCode");
-				labCode = data[labCode_pos].trim();
-				validateLabCode(labCode, countyLabCodes.get(labCode)); //
-				sortedData.add(labCode);
-				sortedData.add(countyLabCodes.get(labCode));
-			} catch (ArrayIndexOutOfBoundsException e) {
-				LOGGER.info("Line thows ArrayIndexOutOfBoundsException, please check...");
-				throw new DataValidationException();
+		if (this.extraHPV.equals("HPV")){
+			//if the file is exta HPV data
+			if (columns.containsKey("labCode")) {
+				try {
+					labCode_pos = columns.get("labCode");
+					labCode = data[labCode_pos].trim();
+					sortedData.add(labCode);
+				} catch (ArrayIndexOutOfBoundsException e) {
+					sortedData.add("NA");
+				}
+			} else {
+				sortedData.add("NA");
 			}
+			// This extra HPV files doenn't usually contain county codes so files are prepared in a way
+			// that first word contians where it is comming from (e.g. "Stockholm.HPV2012.xlsx.csv").
+			Path p = Paths.get(this.inputfileName);
+			String file_name = p.getFileName().toString();
+			LOGGER.info("file_name " + file_name);
+			sortedData.add(file_name.split("_")[0]);
 		} else {
-			LOGGER.info("[labCode], [countyCode] Columns doesn't exist");
-			throw new DataValidationException();
+			LOGGER.info("this.snomedPath " + this.snomedPath);
+			LOGGER.info("this.extraHPV " + this.extraHPV);
+
+			if (columns.containsKey("labCode")) { //&& columns.containsKey("countyCode")
+				try {
+					labCode_pos = columns.get("labCode");
+					//countyCode_pos = columns.get("countyCode");
+					labCode = data[labCode_pos].trim();
+					validateLabCode(labCode, countyLabCodes.get(labCode)); //
+					sortedData.add(labCode);
+					sortedData.add(countyLabCodes.get(labCode));
+				} catch (ArrayIndexOutOfBoundsException e) {
+					//throw new DataValidationException();
+					sortedData.add("NA");
+					sortedData.add("NA");
+					LOGGER.info("Line throws ArrayIndexOutOfBoundsException, please check...");
+				}
+			} else {
+				//throw new DataValidationException();
+				sortedData.add("NA");
+				sortedData.add("NA");
+				LOGGER.info("[labCode], [countyCode] Columns doesn't exist");
+			}
 		}
-		
+
 		if (columns.containsKey("pnr")) {
 			pnr_pos = columns.get("pnr");
 			if (validateSwedishPersonalNumber(data[pnr_pos])) {
-				birthDate = data[pnr_pos].substring(0, 8);
-				data[pnr_pos] = encryptPersonalNumber(data[pnr_pos]);
-				sortedData.add(data[pnr_pos]);
+				birthDate = cleanPNR(data[pnr_pos]).substring(0, 8);
+				sortedData.add(encryptPersonalNumber(cleanPNR(data[pnr_pos]), this.phrase));
+				LOGGER.info("birthDate is {}", birthDate);
+
 			} else {
 				// change flag to 0, which means line is incorrect
 				flagCorrect = "0";
 				pnrComment = "pnr_is_not_valid!";
-				data[pnr_pos] = encryptPersonalNumber(data[pnr_pos]);
-				sortedData.add(data[pnr_pos]);
+				sortedData.add(encryptPersonalNumber(cleanPNR(data[pnr_pos]), this.phrase));
 				LOGGER.info("Cannot validate [pnr]");
 				LOGGER.info("Cannot create Birth Year");
 				// throw new DataValidationException();
 			}
 		} else {
+			sortedData.add("NA");
 			LOGGER.info("[pnr] Column doesn't exist");
+			//throw new DataValidationException();
 		}
 
 		if (columns.containsKey("sampleYear")) {
@@ -421,32 +470,36 @@ public class DataValidatorImpl implements DataValidator {
 			sortedData.add("NA");
 			LOGGER.info("[sampleYear] Column doesn't exist");
 		}
+
 		if (columns.containsKey("regDate")) {
 			regDate_pos = columns.get("regDate");
-			sampleDate_pos = columns.get("sampleDate");
+			//sampleDate_pos = columns.get("sampleDate");
 			validateRegistrationDate(data[regDate_pos]);
-			data[sampleDate_pos] = validateSampleDate(data[sampleDate_pos], data[regDate_pos]);
+			//data[sampleDate_pos] = validateSampleDate(data[sampleDate_pos], data[regDate_pos]);
 			regDate = data[regDate_pos];
-			sampleDate = data[sampleDate_pos]; 
+			//sampleDate = data[sampleDate_pos].replace("-","").replace("/","");
 			sortedData.add(regDate);
-			sortedData.add(sampleDate);
+			//sortedData.add(sampleDate);
 			LOGGER.info("regDate: {}", regDate);
 		} else {
-			if (columns.containsKey("sampleDate")) {
-				sampleDate_pos = columns.get("sampleDate");
-				LOGGER.info("sampleDate: {}", data[sampleDate_pos]);
-				//data[sampleDate_pos] = validateSampleDate(data[sampleDate_pos]);
-				data[sampleDate_pos] = validateSampleDate(data[sampleDate_pos]);
-				sampleDate = data[sampleDate_pos];
-				sortedData.add("NA");
-				sortedData.add(sampleDate);
-			} else {
-				sortedData.add("NA");
-				sortedData.add("NA");
-				LOGGER.info("Cannot validate [registration Date]");
-			}
+			sortedData.add("NA");
+			LOGGER.info("Cannot validate [registration Date]");
 		}
-		
+
+		if (columns.containsKey("sampleDate")) {
+			sampleDate_pos = columns.get("sampleDate");
+			LOGGER.info("sampleDate: {}", data[sampleDate_pos]);
+			//data[sampleDate_pos] = validateSampleDate(data[sampleDate_pos]);
+			//data[sampleDate_pos] = validateSampleDate(data[sampleDate_pos]);
+			sampleDate = validateSampleDate(data[sampleDate_pos]); //data[sampleDate_pos].replace("-","").replace("/","");
+			sortedData.add(sampleDate);
+			LOGGER.info("returning sampleDate: {}", sampleDate);
+		} else {
+			sortedData.add("NA");
+			LOGGER.info("Cannot validate [sampleDate Date]");
+		}
+
+
 		if (columns.containsKey("diagDate")) {
 			diagDate_pos = columns.get("diagDate");
 			if (!data[diagDate_pos].trim().isEmpty()) {
@@ -458,6 +511,7 @@ public class DataValidatorImpl implements DataValidator {
 		} else {
 			sortedData.add("NA");
 		}
+
 		if (columns.containsKey("responseDate")) {
 			responseDate_pos = columns.get("responseDate");
 			if (!data[responseDate_pos].trim().isEmpty()) {
@@ -469,20 +523,43 @@ public class DataValidatorImpl implements DataValidator {
 		} else {
 			sortedData.add("NA");
 		}
+
 		//add age variable 
-		if (!birthDate.equals("") && !(regDate.equals("") || regDate.equals("NULL") || regDate.equals("NA"))){
-			LOGGER.info("regDate: {}", regDate);
+		if (!birthDate.equals("") && !(sampleDate.equals("") || sampleDate.equals("NULL") || sampleDate.equals("NA") ||
+				sampleDate.equals("00000000"))){
+			sortedData.add(String.valueOf(getDifferenceYears(birthDate, sampleDate)));
+			sortedData.add(birthDate.substring(0,6));
+
+			LOGGER.info("sampleDate: {}", sampleDate);
+			LOGGER.info("Age: {}", String.valueOf(getDifferenceYears(birthDate, sampleDate)));
+		}  else if (!birthDate.equals("") && !(regDate.equals("") || regDate.equals("NULL") || regDate.equals("NA") ||
+				regDate.equals("00000000"))){
 			sortedData.add(String.valueOf(getDifferenceYears(birthDate, regDate)));
-		} else if (!birthDate.equals("") && !(sampleDate.equals("") || sampleDate.equals("NULL") || sampleDate.equals("NA"))){
+			sortedData.add(birthDate.substring(0,6));
+
+			LOGGER.info("regDate: {}", regDate);
+			LOGGER.info("Age: {}", String.valueOf(getDifferenceYears(birthDate, sampleDate)));
+		} else if (!birthDate.equals("") && !(sampleDate.equals("") || sampleDate.equals("NULL") ||
+				sampleDate.equals("NA") || regDate.equals("00000000"))){
 			sortedData.add(String.valueOf(getDifferenceYears(birthDate, sampleDate)));
-		} else if (!birthDate.equals("") && !(sampleDate.equals("") || sampleDate.equals("NULL") || sampleDate.equals("NA"))){
-			sortedData.add(String.valueOf(getDifferenceYears(birthDate, sampleDate)));
-		} else if (!birthDate.equals("") && !(diagDate.equals("") || diagDate.equals("NULL") || diagDate.equals("NA"))){
+			sortedData.add(birthDate.substring(0,6));
+
+			LOGGER.info("Age: {}", String.valueOf(getDifferenceYears(birthDate, sampleDate)));
+		} else if (!birthDate.equals("") && !(diagDate.equals("") || diagDate.equals("NULL") ||
+				diagDate.equals("NA") || diagDate.equals("00000000"))){
 			sortedData.add(String.valueOf(getDifferenceYears(birthDate, diagDate)));
-		} else if (!birthDate.equals("") && !(responseDate.equals("") || responseDate.equals("NULL") || responseDate.equals("NA"))){
+			sortedData.add(birthDate.substring(0,6));
+
+			LOGGER.info("Age: {}", String.valueOf(getDifferenceYears(birthDate, sampleDate)));
+		} else if (!birthDate.equals("") && !(responseDate.equals("") || responseDate.equals("NULL") ||
+				responseDate.equals("NA") || responseDate.equals("00000000"))){
+			sortedData.add(birthDate.substring(0,6));
+
 			sortedData.add(String.valueOf(getDifferenceYears(birthDate, responseDate)));
+			LOGGER.info("Age: {}", String.valueOf(getDifferenceYears(birthDate, sampleDate)));
      	} else {
-			sortedData.add("NA");			
+			sortedData.add("NA");
+			sortedData.add("NA");
 			LOGGER.info("Cannot calculate Age...");
 		}
 		
@@ -491,7 +568,8 @@ public class DataValidatorImpl implements DataValidator {
 			if (!data[scrType_pos].trim().isEmpty()) {
 				if (referalOrganaisedTypes.containsKey(data[scrType_pos].trim())) {
 					sortedData.add(referalOrganaisedTypes.get(data[scrType_pos].trim()));
-				} else if ( !referalOrganaisedTypes.containsKey(data[scrType_pos].trim()) && (labCode.equals("88") || labCode.equals("088"))) { //for 088 if non of refType then it is PAD
+				} else if ( !referalOrganaisedTypes.containsKey(data[scrType_pos].trim()) && (labCode.equals("88") ||
+						labCode.equals("088"))) { //for 088 if non of refType then it is PAD
 					sortedData.add("PAD");         //TODO: check if this is necessary at all
 					fileTypeFlag  = "PAD";         //TODO: we need better solution for this 
 				} else {
@@ -500,7 +578,8 @@ public class DataValidatorImpl implements DataValidator {
 			} else {
 				sortedData.add("NA");
 			}
-		} else if (labCode.equals("541") || labCode.equals("571") || labCode.equals("611") || labCode.equals("241") || labCode.equals("247")) {
+		} else if (labCode.equals("541") || labCode.equals("571") || labCode.equals("611") || labCode.equals("241") ||
+				labCode.equals("247")) {
 			// From these labs referal types are extracted remClinic
 			if (!remClinic.equals("")) {
 				LOGGER.info("remClinic_referalOrganaisedTypes " + remClinic.substring(0, 2));
@@ -535,11 +614,13 @@ public class DataValidatorImpl implements DataValidator {
 				flagCorrect = "0";
 				snomedComment = "snomed_is_not_valid!";
 				sortedData.add(data[snomed_pos]);
-				//TODO: here add if snomed is not valid add NA what we know about snomed of CELL or HPV from HPVsnomedCodes and CELLsnomedCodes
+				//TODO: here add if snomed is not valid add NA what we know about snomed of CELL or HPV from
+				//TODO:  HPVsnomedCodes and CELLsnomedCodes
 				sortedData.add("NA");										
 				LOGGER.info("Cannot validate [snomed]");
 			}
 		}
+
 		if (columns.containsKey("topoCode")) {
 			topoCode_pos = columns.get("topoCode");
 			if (!data[topoCode_pos].trim().isEmpty()) {
@@ -550,6 +631,7 @@ public class DataValidatorImpl implements DataValidator {
 		} else {
 			sortedData.add("NA");
 		}
+
 		if (columns.containsKey("refNR")) {
 			refNR_pos = columns.get("refNR");
 			if (!data[refNR_pos].trim().isEmpty()) {
@@ -607,9 +689,11 @@ public class DataValidatorImpl implements DataValidator {
 			sortedData.add("CELL");
 		} else if ( this.snomedPath == PAD_SNOMED_PATH ){
 			sortedData.add("PAD");
-		} else if ( this.snomedPath == CELL_PAD_SNOMED_PATH && (labCode.equals("88") || labCode.equals("088")) && fileTypeFlag.equals("PAD")) {
+		} else if ( this.snomedPath == CELL_PAD_SNOMED_PATH && (labCode.equals("88") || labCode.equals("088")) &&
+				fileTypeFlag.equals("PAD")) {
 			sortedData.add("PAD");
-		} else if ( this.snomedPath == CELL_PAD_SNOMED_PATH && (labCode.equals("88") || labCode.equals("088")) && !fileTypeFlag.equals("PAD")) {
+		} else if ( this.snomedPath == CELL_PAD_SNOMED_PATH && (labCode.equals("88") || labCode.equals("088")) &&
+				!fileTypeFlag.equals("PAD")) {
 			sortedData.add("CELL");	
 		} else {
 		    sortedData.add("NA");
@@ -628,19 +712,37 @@ public class DataValidatorImpl implements DataValidator {
 		sortedData.toArray(sortedArray);
 		// return Arrays.toString(data);
 		return Arrays.toString(sortedArray);
+
 	}
 
 	public String validateColumnValue(String value) {
 		if (validateSwedishPersonalNumber(value)) {
-			return encryptPersonalNumber(value);
+			return encryptPersonalNumber(value, this.phrase);
 		}
 		return (validateSampleYear(value) || validateFullDate(value) || validateCounty(value) || validateLabCode(value))
 				? value : null;
 	}
 
+	//TODO: Should check all types of date formats
 	private String validateSampleDate(String sampleDate) {
 		LOGGER.info("Validating sampleDate");
-		return validateFullDate(sampleDate.trim()) ? sampleDate : (Year.now().getValue() - 1) + "0601";
+		return sampleDate.trim().replace("-","").replace("/","");
+		/*
+		if (validateFullDate(sampleDate.trim())) {
+			return sampleDate;
+		} else {
+			return validateFullDate(sampleDate.trim()) ? sampleDate : (Year.now().getValue() - 1) + "0601";
+		}
+		*/
+	}
+
+	private String validateSampleDate(String sampleDate, String regDate) {
+		LOGGER.info("Validating Sample Date");
+		if (validateFullDate(sampleDate.trim())) {
+			return sampleDate.replace("-","").replace("/","");
+		} else {
+			return validateFullDate(regDate.trim()) ? regDate : (Year.now().getValue() - 1) + "0601";
+		}
 	}
 
 	private boolean validateSampleYear(String sampleYear) {
@@ -652,15 +754,6 @@ public class DataValidatorImpl implements DataValidator {
 		return true;
 	}
 
-	private String validateSampleDate(String sampleDate, String regDate) {
-		LOGGER.info("Validating Sample Date");
-		if (validateFullDate(sampleDate.trim())) {
-			return sampleDate;
-		} else {
-			return validateFullDate(regDate.trim()) ? regDate : (Year.now().getValue() - 1) + "0601";
-		}
-	}
-
 	private boolean validateRegistrationDate(String regDate) {
 		LOGGER.info("Validating Registration Date");
 		return validateFullDate(regDate.trim());
@@ -668,10 +761,10 @@ public class DataValidatorImpl implements DataValidator {
 
 	private boolean validateFullDate(String fullDate) {
 		LOGGER.info("Validating Full Date");
-		DateTimeFormatter formatter = new DateTimeFormatterBuilder().appendPattern("yyyyMMdd").parseStrict()
-				.toFormatter();
+		DateTimeFormatter formatter = new DateTimeFormatterBuilder().appendPattern("yyyyMMdd")
+				.parseStrict().toFormatter();
 		try {
-			LocalDate.parse(fullDate, formatter);
+			LocalDate.parse(fullDate.replace("-","").replace("/",""), formatter);
 			return true;
 		} catch (DateTimeParseException e) {
 			LOGGER.error("Date parsing error, Data malformatted {}", fullDate);

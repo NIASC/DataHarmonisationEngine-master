@@ -1,6 +1,5 @@
 package org.five_v_analytics;
 
-
 import com.ibm.icu.text.CharsetDetector;
 import org.five_v_analytics.exceptions.DataValidationException;
 import org.five_v_analytics.validators.DataValidator;
@@ -11,29 +10,25 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.nio.charset.Charset;
-import java.nio.charset.CodingErrorAction;
-import java.nio.charset.CharsetDecoder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.ByteBuffer;
-import java.nio.charset.CharacterCodingException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
 public class FileProcessor {
 	private static final Logger LOGGER = LoggerFactory.getLogger(FileProcessor.class);
-	private static final String[] SPLITTERS = { ";", ",", "\t", " ", "[\t]+", "[ ]+" };
+	private static final String[] SPLITTERS = { ";", ",", "\t", " ", "[\t]+", "[ ]+", "[; \\t ,]+"};
 	private static Path success;
 	private static Path failure;
 	private static DataValidator validator;
 	private static String[] columnNames;
 	private static String delimiter = "";
 
-	public static void process(String inputPath, String outputPath, String type) {
+	public static void process(String inputPath, String outputPath, String phrase, String type) {
 
-		validator = new DataValidatorImpl(type);
+		validator = new DataValidatorImpl(type, inputPath, phrase);
 		try {
 			LOGGER.info("Searching for files");
 			Files.walk(Paths.get(inputPath)).forEach(filePath -> {
@@ -86,67 +81,101 @@ public class FileProcessor {
 		}
 	}
 
-	private static void createColumnHeadersMap(BufferedWriter failureWriter, BufferedWriter successWriter, String line) throws IOException {
+	private static void createColumnHeadersMap(BufferedWriter failureWriter, BufferedWriter successWriter, String line)
+			throws IOException {
 		LOGGER.info("Mapping column headers");
 		columnNames = getColumnNames(line);
 		ColumnHeaderMapper.mapHeaderToIndex(columnNames);
-		
-		//TODO: here it will be much better to guess based on value, eg 1st is labcode, 2nd is pnr etc //Integer.parseInt(columnNames[0].trim()) == 88
-		if((columnNames[0].trim().equals("88") || columnNames[0].trim().equals("088")) && ColumnHeaderMapper.getColumnMap().isEmpty()) {
-			String lab088_header = "labcode,pnr,sampleyear,referralnr,scr_type,sample_date,reg_date,rem_clinic,ans_clinic,deb_clinic,doctor,sample_nr,topo,diag_nr,snomed,sample_type,obliterated,county,municip"; 
+
+		//TODO: here it will be much better to guess based on value, eg 1st is labcode, 2nd is pnr etc
+		if((columnNames[0].trim().equals("88") || columnNames[0].trim().equals("088")) &&
+				ColumnHeaderMapper.getColumnMap().isEmpty()) {
+			String lab088_header = "labcode,pnr,sampleyear,referralnr,scr_type,sample_date,reg_date,rem_clinic," +
+					"ans_clinic,deb_clinic,doctor,sample_nr,topo,diag_nr,snomed,sample_type,obliterated,county,municip";
 			ColumnHeaderMapper.mapHeaderToIndex(splitLine(lab088_header, ","));
-			LOGGER.info("File doesn't have the header line, but it seems files comes from lab 088 and its columnNames are: " + lab088_header);
+			LOGGER.info("File doesn't have the header line, but it seems files comes from lab 088 and its columnNames " +
+					"are: " + lab088_header);
 		} else if ((columnNames[0].trim().equals("127")) && ColumnHeaderMapper.getColumnMap().isEmpty()) {
-			String lab127_header = "labcode,pnr,sampleyear,referralnr,referraltype,sampledate,regdate,remclinic,ansclinic,debclinic,doctor,samplenr,scr_type,snomed,sampletype,obliterated,county,municip,responsedate"; 
+			String lab127_header = "labcode,pnr,sampleyear,referralnr,referraltype,sampledate,regdate,remclinic," +
+					"ansclinic,debclinic,doctor,samplenr,scr_type,snomed,sampletype,obliterated,county,municip," +
+					"responsedate";
 			ColumnHeaderMapper.mapHeaderToIndex(splitLine(lab127_header, ","));
-			LOGGER.info("File doesn't have the header line, but it seems files comes from lab 127 and its columnNames are: " + lab127_header);
+			LOGGER.info("File doesn't have the header line, but it seems files comes from lab 127 and its columnNames are: "
+					+ lab127_header);
 		} else if ((columnNames[0].trim().equals("551")) && ColumnHeaderMapper.getColumnMap().isEmpty()) {
-			LOGGER.info("File doesn't have the header line, but it seems files comes from lab 551 and its columnNames are: ");
-			String lab551_header = "labcode,pnr,sampleyear,referralnr,scrtype,sampledate,regdate,remclinic,ansclinic,debclinic,doctor,notnown1,notnown2,snomed,sampletype,obliterated,county,municip,responsedate";
+			LOGGER.info("File doesn't have the header line, but it seems files comes from lab 551 and its " +
+					"columnNames are: ");
+			String lab551_header = "labcode,pnr,sampleyear,referralnr,scrtype,sampledate,regdate,remclinic,ansclinic," +
+					"debclinic,doctor,notnown1,notnown2,snomed,sampletype,obliterated,county,municip";
 			ColumnHeaderMapper.mapHeaderToIndex(splitLine(lab551_header, ","));
-			LOGGER.info("File doesn't have the header line, but it seems files comes from lab 551 and its columnNames are: " + lab551_header);						
+			LOGGER.info("File doesn't have the header line, but it seems files comes from lab 551 and its columnNames are: " +
+					lab551_header);
 		} else if ((columnNames[0].trim().equals("541")) && ColumnHeaderMapper.getColumnMap().isEmpty()) {
 			LOGGER.info("File doesn't have the header line, but it seems files comes from lab 541 and its columnNames are: ");
-			String lab541_header = "labcode,pnr,sampleyear,referralnr,scrtype,sampledate,regdate,remclinic,ansclinic,debclinic,doctor,notnown1,notnown2,snomed,sampletype,obliterated,county,municip,responsedate";
+			String lab541_header = "labcode,pnr,sampleyear,referralnr,scrtype,sampledate,regdate,remclinic,ansclinic,debclinic," +
+					"doctor,notnown1,notnown2,snomed,sampletype,obliterated,county,municip";
 			ColumnHeaderMapper.mapHeaderToIndex(splitLine(lab541_header, ",")); 
-			LOGGER.info("File doesn't have the header line, but it seems files comes from lab 541 and its columnNames are: " + lab541_header);
+			LOGGER.info("File doesn't have the header line, but it seems files comes from lab 541 and its columnNames are: " +
+					lab541_header);
 		} else if ((columnNames[0].trim().equals("641")) && ColumnHeaderMapper.getColumnMap().isEmpty()) {
             LOGGER.info("File doesn't have the header line, but it seems files comes from lab 641 and its columnNames are: ");
-            String lab641_header = "labcode,pnr,sampleyear,referralnr,referraltype,sampledate,diagdate,remclinic,ansclinic,debclinic,doctor,samplenr,topocode,diagnr,snomed,sampletype,obliterated,county,municip,responsedate";
+            String lab641_header = "labcode,pnr,sampleyear,referralnr,referraltype,sampledate,diagdate,remclinic," +
+					"ansclinic,debclinic,doctor,samplenr,topocode,diagnr,snomed,sampletype,obliterated,county,municip";
             ColumnHeaderMapper.mapHeaderToIndex(splitLine(lab641_header, ","));
-            LOGGER.info("File doesn't have the header line, but it seems files comes from lab 541 and its columnNames are: " + lab641_header);
+            LOGGER.info("File doesn't have the header line, but it seems files comes from lab 541 and its columnNames are: " +
+					lab641_header);
 
         } else if ((columnNames[0].trim().equals("241")) && ColumnHeaderMapper.getColumnMap().isEmpty()) {
             LOGGER.info("File doesn't have the header line, but it seems files comes from lab 641 and its columnNames are: ");
-            String lab241_header = "labcode,pnr,sampleyear,referralnr,referraltype,sampledate,diagdate,remclinic,ansclinic,debclinic,doctor,samplenr,topocode,diagnr,snomed,sampletype,obliterated,county,municip,responsedate";
+            String lab241_header = "labcode,pnr,sampleyear,referralnr,referraltype,sampledate,diagdate,remclinic,ansclinic," +
+					"debclinic,doctor,samplenr,topocode,diagnr,snomed,sampletype,obliterated,county,municip";
             ColumnHeaderMapper.mapHeaderToIndex(splitLine(lab241_header, ","));
-            LOGGER.info("File doesn't have the header line, but it seems files comes from lab 541 and its columnNames are: " + lab241_header);
+            LOGGER.info("File doesn't have the header line, but it seems files comes from lab 541 and its " +
+					"columnNames are: " + lab241_header);
         } else if ((columnNames[0].trim().equals("251")) && ColumnHeaderMapper.getColumnMap().isEmpty()) {
             LOGGER.info("File doesn't have the header line, but it seems files comes from lab 641 and its columnNames are: ");
-            String lab251_header = "labcode,pnr,sampleyear,referralnr,referraltype,sampledate,diagdate,remclinic,ansclinic,debclinic,doctor,samplenr,topocode,diagnr,snomed,sampletype,obliteratedcounty,municip,responsedate";
+            String lab251_header = "labcode,pnr,sampleyear,referralnr,referraltype,sampledate,diagdate,remclinic," +
+					"ansclinic,debclinic,doctor,samplenr,topocode,diagnr,snomed,sampletype,obliteratedcounty," +
+					"municip,responsedate";
             ColumnHeaderMapper.mapHeaderToIndex(splitLine(lab251_header, ","));
-            LOGGER.info("File doesn't have the header line, but it seems files comes from lab 541 and its columnNames are: " + lab251_header);
+            LOGGER.info("File doesn't have the header line, but it seems files comes from lab 541 and its columnNames are: "
+					+ lab251_header);
         } else if ((columnNames[0].trim().equals("571")) && ColumnHeaderMapper.getColumnMap().isEmpty()) {
             LOGGER.info("File doesn't have the header line, but it seems files comes from lab 641 and its columnNames are: ");
-            String lab571_header = "labcode,pnr,sampleyear,referralnr,referraltype,sampledate,diagdate,remclinic,ansclinic,debclinic,doctor,samplenr,topocode,diagnr,snomed,sampletype,obliteratedcounty,municip,responsedate";
+            String lab571_header = "labcode,pnr,sampleyear,referralnr,referraltype,sampledate,diagdate,remclinic,ansclinic," +
+					"debclinic,doctor,samplenr,topocode,diagnr,snomed,sampletype,obliteratedcounty,municip";
             ColumnHeaderMapper.mapHeaderToIndex(splitLine(lab571_header, ","));
-            LOGGER.info("File doesn't have the header line, but it seems files comes from lab 541 and its columnNames are: " + lab571_header);
+            LOGGER.info("File doesn't have the header line, but it seems files comes from lab 541 and its columnNames are: "
+					+ lab571_header);
         } else if ((columnNames[0].trim().equals("611")) && ColumnHeaderMapper.getColumnMap().isEmpty()) {
             LOGGER.info("File doesn't have the header line, but it seems files comes from lab 641 and its columnNames are: ");
-            String lab611_header = "labcode,pnr,sampleyear,referralnr,referraltype,sampledate,diagdate,remclinic,ansclinic,debclinic,doctor,samplenr,topocode,diagnr,snomed,sampletype,obliterated,county,municip,responsedate";
+            String lab611_header = "labcode,pnr,sampleyear,referralnr,referraltype,sampledate,diagdate,remclinic,ansclinic," +
+					"debclinic,doctor,samplenr,topocode,diagnr,snomed,sampletype,obliterated,county,municip,responsedate";
             ColumnHeaderMapper.mapHeaderToIndex(splitLine(lab611_header, ","));
-            LOGGER.info("File doesn't have the header line, but it seems files comes from lab 541 and its columnNames are: " + lab611_header);
+            LOGGER.info("File doesn't have the header line, but it seems files comes from lab 541 and its columnNames are: "
+					+ lab611_header);
         } else if ((columnNames[0].trim().equals("621")) && ColumnHeaderMapper.getColumnMap().isEmpty()) {
             LOGGER.info("File doesn't have the header line, but it seems files comes from lab 641 and its columnNames are: ");
-            String lab621_header = "labcode,pnr,sampleyear,referralnr,referraltype,,sampledate,diagdate,remclinic,ansclinic,debclinic,doctor,samplenr,topocode,diagnr,snomed,sampletype,obliterated,county,municip,responsedate";
+            String lab621_header = "labcode,pnr,sampleyear,referralnr,referraltype,,sampledate,diagdate,remclinic,ansclinic," +
+					"debclinic,doctor,samplenr,topocode,diagnr,snomed,sampletype,obliterated,county,municip";
             ColumnHeaderMapper.mapHeaderToIndex(splitLine(lab621_header, ","));
-            LOGGER.info("File doesn't have the header line, but it seems files comes from lab 541 and its columnNames are: " + lab621_header);
+            LOGGER.info("File doesn't have the header line, but it seems files comes from lab 541 and its columnNames are: "
+					+ lab621_header);
         }  else if ((columnNames[0].trim().equals("641")) && ColumnHeaderMapper.getColumnMap().isEmpty()) {
             LOGGER.info("File doesn't have the header line, but it seems files comes from lab 641 and its columnNames are: ");
-            String lab641_header = "labcode,pnr,sampleyear,referralnr,referraltype,sampledate,diagdate,remclinic,ansclinic,debclinic,doctor,samplenr,topocode,diagnr,snomed,sampletype,obliterated,county,municip,responsedate";
+            String lab641_header = "labcode,pnr,sampleyear,referralnr,referraltype,sampledate,diagdate,remclinic,ansclinic," +
+					"debclinic,doctor,samplenr,topocode,diagnr,snomed,sampletype,obliterated,county,municip,responsedate";
             ColumnHeaderMapper.mapHeaderToIndex(splitLine(lab641_header, ","));
-            LOGGER.info("File doesn't have the header line, but it seems files comes from lab 541 and its columnNames are: " + lab641_header);
-        } else if (ColumnHeaderMapper.getColumnMap().isEmpty()) {
+            LOGGER.info("File doesn't have the header line, but it seems files comes from lab 541 and its " +
+					"columnNames are: " + lab641_header);
+        }   else if ((columnNames[0].trim().equals("631")) && ColumnHeaderMapper.getColumnMap().isEmpty()) {
+			LOGGER.info("File doesn't have the header line, but it seems files comes from lab 631 and its columnNames are: ");
+			String lab631_header = "labcode,pnr,sampleyear,referralnr,referraltype,sampledate,diagdate,remclinic," +
+					"ansclinic,debclinic,doctor,samplenr,topocode,diagnr,snomed,sampletype,obliterated,county,municip";
+			ColumnHeaderMapper.mapHeaderToIndex(splitLine(lab631_header, ","));
+			LOGGER.info("File doesn't have the header line, but it seems files comes from lab 541 and its " +
+					"columnNames are: " + lab631_header);
+		} else if (ColumnHeaderMapper.getColumnMap().isEmpty()) {
 			LOGGER.info("File doesn't have the header line");
 			validateColumn(successWriter, failureWriter, line);
 			return;
@@ -154,7 +183,8 @@ public class FileProcessor {
 		LOGGER.info("Writing column headers in success and failure files");
 		// \\//:
 		// successWriter.write(line + "\n");
-		successWriter.write("labCode,countyCode,pnr,sampleYear,regDate,sampleDate,diagDate,responseDate,Age,scrType,snomed,hpv_cell,topoCode,refNR,remClinic,ansClinic,sampleNR,diagNR,File_type,Flag_correct,Comment,"+ "\n");
+		successWriter.write("labCode,countyCode,pnr,sampleYear,regDate,sampleDate,diagDate,responseDate,Age,birthDate,scrType," +
+				"snomed,hpv_cell,topoCode,refNR,remClinic,ansClinic,sampleNR,diagNR,File_type,Flag_correct,Comment,"+ "\n");
 		LOGGER.info("Writing column headers in failure file");
 		failureWriter.write(line + "\n");
 	}
@@ -186,7 +216,8 @@ public class FileProcessor {
 		}
 	}
 
-	private static void validateLine(BufferedWriter successWriter, BufferedWriter failureWriter, String line, int columnNames_length) throws IOException {
+	private static void validateLine(BufferedWriter successWriter, BufferedWriter failureWriter, String line,
+									 int columnNames_length) throws IOException {
 		// LOGGER.info("Validating line [{}]", line);
 		Map<String, Integer> headers = ColumnHeaderMapper.getColumnMap();
 	    LOGGER.info("headers: " + headers); 
@@ -214,14 +245,17 @@ public class FileProcessor {
 		if ( ! (headers.get("Doctor") ==  null)){
 			docPos = headers.get("Doctor"); 
 		}
-		
+
+		LOGGER.info("The length of values is : " + getColumnValues(line).length + " and columnNames_length is " +
+				columnNames_length);
+
 		//Check if length of line is equal to length of 
 		if ( getColumnValues(line).length == columnNames_length) {
 			try {
 				// \\//:
-				// successWriter.write(validator.validateAndReturnLine(headers,
-				// getColumnValues(line)) + "\n");
-				successWriter.write(validator.validateAndReturnLine(headers, getColumnValues(line)).toString().replaceAll(" ", "").replaceAll("\\[", "").replaceAll("\\]", "") + "\n");
+				// successWriter.write(validator.validateAndReturnLine(headers, getColumnValues(line)) + "\n");
+				successWriter.write(validator.validateAndReturnLine(headers, getColumnValues(line)).toString()
+						.replaceAll(" ", "").replaceAll("\\[", "").replaceAll("\\]", "") + "\n");
 				LOGGER.info("validation finished successfully for line [{}]"); // line
 			} catch (DataValidationException e) {
 				LOGGER.info("Validation failed for line [{}], writing to failure directory"); // line
@@ -232,14 +266,17 @@ public class FileProcessor {
 			//shift columns after doctor
 			for (String key : updated_headers_less.keySet()) {
 				if ( updated_headers_less.get(key) > docPos){
-					updated_headers_less.put(key, updated_headers_less.get(key) - (columnNames_length - getColumnValues(line).length));
+					updated_headers_less.put(key, updated_headers_less.get(key) - (columnNames_length -
+							getColumnValues(line).length));
 				} 
 			}
 		    LOGGER.info("headers: " + headers); 
 		    LOGGER.info("final_updated_headers_less: " + updated_headers_less); 
 
 			try {
-			    successWriter.write(validator.validateAndReturnLine(updated_headers_less, getColumnValues(line)).toString().replaceAll(" ", "").replaceAll("\\[", "").replaceAll("\\]", "") + "\n");
+			    successWriter.write(validator.validateAndReturnLine(updated_headers_less,
+						getColumnValues(line)).toString().replaceAll(" ", "").replaceAll("\\[", "")
+						.replaceAll("\\]", "") + "\n");
 			    LOGGER.info("validation finished successfully for line [{}]"); // line
 			} catch (DataValidationException e) {
 				LOGGER.info("Validation failed for line [{}], writing to failure directory"); // line
@@ -250,19 +287,24 @@ public class FileProcessor {
 			//shift columns after doctor
 			for (String key : updated_headers_more.keySet()) {
 				if ( updated_headers_more.get(key) > docPos){
-					updated_headers_more.put(key, updated_headers_more.get(key) + (getColumnValues(line).length - columnNames_length));
+					updated_headers_more.put(key, updated_headers_more.get(key) + (getColumnValues(line).length -
+							columnNames_length));
 				}
 			}
 		    LOGGER.info("updated_headers_more" + updated_headers_more); 
 			try {
-			    successWriter.write(validator.validateAndReturnLine(updated_headers_more, getColumnValues(line)).toString().replaceAll(" ", "").replaceAll("\\[", "").replaceAll("\\]", "") + "\n");
+			    successWriter.write(validator.validateAndReturnLine(updated_headers_more,
+						getColumnValues(line)).toString().replaceAll(" ", "").replaceAll("\\[", "").
+						replaceAll("\\]", "") + "\n");
 			    LOGGER.info("validation finished successfully for line [{}]"); // line
 			} catch (DataValidationException e) {
 				LOGGER.info("Validation failed for line [{}], writing to failure directory"); // line
 				failureWriter.write(line + "\n");
 			}
 		} else {
-			LOGGER.info("Validation failed for line [{}], it has diffeternt length " + getColumnValues(line).length + " than its headers = "  + columnNames_length + " writing to failure directory"); // line
+			LOGGER.info("Validation failed for line [{}], it has diffeternt length " +
+					getColumnValues(line).length + " than its headers = "  + columnNames_length + " " +
+					"writing to failure directory"); // line
 			failureWriter.write(line + "\n");
 		}
 		
@@ -306,9 +348,11 @@ public class FileProcessor {
 
 	private static String[] getColumnNames(String line) {
 		LOGGER.info("Trying to get file delimiter");
-		String[] initial = splitLine(line, "[ ;\\t]+");
+		String[] initial = splitLine(line, "[; \\t ,]+");
 		for (String splitter : SPLITTERS) {
 			String[] holder = splitLine(line, splitter);
+            LOGGER.info("holder.length = " + holder.length +  " and initial.length = "
+					+ initial.length + " when splitter = " + splitter);
 			if (holder.length == initial.length) {
 				delimiter = splitter;
 				LOGGER.info("File delimiter is {}", delimiter);
@@ -319,7 +363,7 @@ public class FileProcessor {
 	}
 
 	private static String[] getColumnValues(String line) {
-		// LOGGER.info("Splitting line {}", line);
+		//LOGGER.info("Splitting line {}", line);
 		return splitLine(line, delimiter);
 	}
 

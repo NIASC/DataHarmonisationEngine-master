@@ -1,6 +1,5 @@
 package org.five_v_analytics;
 
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,9 +15,19 @@ public class ColumnHeaderMapper {
         columnNames = new HashMap<>();
 //      Lab Code
         columnNames.put("labcode", "labCode");
-        columnNames.put("labkod","labCode");
+        columnNames.put("labkod", "labCode");
+        columnNames.put("labidentitet", "labCode");
+        columnNames.put("laboatorium", "labCode");
+        columnNames.put("lab-id", "labCode");
+        columnNames.put("lab.id", "labCode");
+
 //      Personal Number
         columnNames.put("pnr", "pnr");
+        columnNames.put("personnummer", "pnr");
+        columnNames.put("pnr", "pnr");
+        columnNames.put("patient", "pnr");
+        columnNames.put("pidnr", "pnr");
+
 //      Sample Year
         columnNames.put("padyear", "sampleYear");
         columnNames.put("sampleyear", "sampleYear");
@@ -27,13 +36,23 @@ public class ColumnHeaderMapper {
 //      Screening Type
         columnNames.put("scrtype", "ScreeningType");
 //      Sample Date
+        columnNames.put("sampleDate", "sampleDate");
         columnNames.put("smeardate", "sampleDate");
         columnNames.put("sampledate", "sampleDate");
         columnNames.put("sample_date", "sampleDate");
         columnNames.put("paddate", "sampleDate");
         columnNames.put("pad_date", "sampleDate");
+        columnNames.put("provdatum", "sampleDate");
+        columnNames.put("prdate", "sampleDate");
+        columnNames.put("provtagningstid", "sampleDate");
+        columnNames.put("provdat", "sampleDate");
+        columnNames.put("prov.datum", "sampleDate");
+        columnNames.put("prov-datum", "sampleDate");
+        columnNames.put("prdate", "sampleDate");
+
 //      Registration Date
         columnNames.put("regdate", "regDate");
+        columnNames.put("reg_date", "regDate");
 //      Response Date
         columnNames.put("responsedate", "responseDate");
 //      Diagnosis date	
@@ -58,8 +77,15 @@ public class ColumnHeaderMapper {
         columnNames.put("ansclinic", "ansClinic");
         columnNames.put("ans_clinic", "ansClinic");
 //      Sample number	
+        columnNames.put("sampleNR", "sampleNR");
         columnNames.put("samplenr", "sampleNR");
         columnNames.put("sample_nr", "sampleNR");
+        columnNames.put("providentitet", "sampleNR");
+        columnNames.put("externt_provId", "sampleNR");
+        columnNames.put("sample-ID", "sampleNR");
+        columnNames.put("sample.ID", "sampleNR");
+        columnNames.put("provid", "sampleNR");
+
 //      Diagnosis number
         columnNames.put("diagnr", "diagNR");
 //      Screening type
@@ -67,16 +93,14 @@ public class ColumnHeaderMapper {
         columnNames.put("scrtype", "scrType");                
 
 //      Doctor
-        columnNames.put("Doctor", "Doctor");                
-        columnNames.put("doctor", "Doctor");                
-
+        columnNames.put("doctor", "Doctor");
     }
 
     public static void mapHeaderToIndex(String[] headers) {
         columnMap = new HashMap<>();
         String value;
         for (int i = 0; i < headers.length; i++) {
-            value = columnNames.get(headers[i].toLowerCase().trim());
+            value = columnNames.get(headers[i].toLowerCase().trim().replace(" ","_"));
             if (value != null) {
                 LOGGER.info("Indexing header [{}] ", headers[i]);
                 columnMap.put(value, i);

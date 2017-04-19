@@ -13,7 +13,8 @@ public class Cli {
         options.addOption("h", "help", false, "show help.");
         options.addOption("i", "input", true, "input file directory location");
         options.addOption("o", "output", true, "output file directory location");
-        options.addOption("t", "type", true, "file type (c - Cell | p - Pad | i - Inv).");
+        options.addOption("p", "phrase", true, "secret phrase for PIN pseudonymisation");
+        options.addOption("t", "type", true, "file type (c - Cell | p - Pad | i - Inv | e - extra-hpv).");
     }
 
     public void parse() {
@@ -27,12 +28,13 @@ public class Cli {
                 help();
             }
 
-            if (cmd.hasOption("i") &&
-                    cmd.hasOption("o") &&
-                    cmd.hasOption("t")) {
-                    FileProcessor.process(cmd.getOptionValue("i"),
+            if (cmd.hasOption("i") && cmd.hasOption("o") && cmd.hasOption("p") && cmd.hasOption("t")) {
+                    FileProcessor.process(
+                            cmd.getOptionValue("i"),
                             cmd.getOptionValue("o"),
-                            cmd.getOptionValue("t"));
+                            cmd.getOptionValue("p"),
+                            cmd.getOptionValue("t")
+                    );
 
             } else {
                 help();
@@ -45,7 +47,6 @@ public class Cli {
 
     private void help() {
         HelpFormatter formatter = new HelpFormatter();
-
         formatter.printHelp("Data Validator", options);
         System.exit(0);
     }
